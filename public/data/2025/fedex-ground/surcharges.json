@@ -1,0 +1,177 @@
+{
+  "amounts": {
+    "2": {
+      "AHS-Dim": 28,
+      "AHS-Weight": 43.5,
+      "AHS-Pkg": 25,
+      "Oversize": 240,
+      "Unauthorized": 1775
+    },
+    "3": {
+      "AHS-Dim": 31,
+      "AHS-Weight": 47.5,
+      "AHS-Pkg": 29,
+      "Oversize": 260,
+      "Unauthorized": 1775
+    },
+    "4": {
+      "AHS-Dim": 31,
+      "AHS-Weight": 47.5,
+      "AHS-Pkg": 29,
+      "Oversize": 260,
+      "Unauthorized": 1775
+    },
+    "5": {
+      "AHS-Dim": 36,
+      "AHS-Weight": 52.75,
+      "AHS-Pkg": 31,
+      "Oversize": 297.5,
+      "Unauthorized": 1775
+    },
+    "6": {
+      "AHS-Dim": 36,
+      "AHS-Weight": 52.75,
+      "AHS-Pkg": 31,
+      "Oversize": 297.5,
+      "Unauthorized": 1775
+    },
+    "7": {
+      "AHS-Dim": 38,
+      "AHS-Weight": 55,
+      "AHS-Pkg": 31.5,
+      "Oversize": 305,
+      "Unauthorized": 1775
+    },
+    "8": {
+      "AHS-Dim": 38,
+      "AHS-Weight": 55,
+      "AHS-Pkg": 31.5,
+      "Oversize": 305,
+      "Unauthorized": 1775
+    }
+  },
+  "residential": {
+    "charge_per_pkg": 5.95
+  },
+  "das": {
+    "None": {
+      "commercial": 0,
+      "residential": 0
+    },
+    "Base": {
+      "commercial": 4.20,
+      "residential": 6.20
+    },
+    "Extended": {
+      "commercial": 5.25,
+      "residential": 8.30
+    },
+    "Remote": {
+      "commercial": 15.50,
+      "residential": 15.50
+    },
+    "Alaska": {
+      "commercial": 43.00,
+      "residential": 43.00
+    },
+    "Hawaii": {
+      "commercial": 14.50,
+      "residential": 14.50
+    },
+    "Intra-Hawaii": {
+      "commercial": 1.10,
+      "residential": 1.10
+    }
+  },
+  "rules": {
+    "AHS-Dim": {
+      "conditions": [
+        {
+          "field": "longest_inch",
+          "op": ">",
+          "value": 48
+        },
+        {
+          "field": "second_longest_inch",
+          "op": ">",
+          "value": 30
+        },
+        {
+          "field": "length_girth_inch",
+          "op": ">",
+          "value": 105
+        }
+      ],
+      "logic": "OR",
+      "min_billable_lb": 40
+    },
+    "AHS-Wgt": {
+      "conditions": [
+        {
+          "field": "actual_weight_lb",
+          "op": ">",
+          "value": 50
+        }
+      ],
+      "logic": "SINGLE",
+      "min_billable_lb": null
+    },
+    "AHS-Pkg": {
+      "conditions": [
+        {
+          "field": "non_standard_packaging",
+          "op": "==",
+          "value": true
+        }
+      ],
+      "logic": "SINGLE",
+      "min_billable_lb": null,
+      "note": "금속/목재 등 비표준 포장"
+    },
+    "Oversize": {
+      "conditions": [
+        {
+          "field": "longest_inch",
+          "op": ">",
+          "value": 96
+        },
+        {
+          "field": "length_girth_inch",
+          "op": ">",
+          "value": 130
+        }
+      ],
+      "logic": "OR",
+      "min_billable_lb": 90
+    },
+    "Unauthorized": {
+      "conditions": [
+        {
+          "field": "longest_inch",
+          "op": ">",
+          "value": 108
+        },
+        {
+          "field": "length_girth_inch",
+          "op": ">",
+          "value": 165
+        },
+        {
+          "field": "actual_weight_kg",
+          "op": ">",
+          "value": 68
+        }
+      ],
+      "logic": "OR",
+      "min_billable_lb": 90
+    },
+    "priority_order": [
+      "Unauthorized",
+      "Oversize",
+      "AHS-Dim",
+      "AHS-Wgt",
+      "AHS-Pkg"
+    ],
+    "rule": "highest_amount_when_both_ahs"
+  }
+}

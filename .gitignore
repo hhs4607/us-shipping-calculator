@@ -1,0 +1,19 @@
+# Dependencies
+.venv/
+node_modules/
+
+# Source files (not needed for deployment)
+scripts/
+*.xlsx
+*.pdf
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Review docs (local only)
+REVIEW_*.md

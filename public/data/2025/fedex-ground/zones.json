@@ -1,0 +1,86 @@
+[
+  {
+    "zone": 2,
+    "distance_miles": "0–150",
+    "distance_km": "0–240",
+    "example_la": "LA→샌디에이고",
+    "example_chicago": "시카고→밀워키",
+    "delivery_days": "1일",
+    "rate_1lb": 11.32,
+    "rate_50lb": 27.67,
+    "rate_100lb": 70.39,
+    "note": "가장 가까움"
+  },
+  {
+    "zone": 3,
+    "distance_miles": "151–300",
+    "distance_km": "241–480",
+    "example_la": "LA→라스베이거스",
+    "example_chicago": "시카고→세인트루이스",
+    "delivery_days": "1~2일",
+    "rate_1lb": 11.65,
+    "rate_50lb": 34.61,
+    "rate_100lb": 71.03,
+    "note": ""
+  },
+  {
+    "zone": 4,
+    "distance_miles": "301–600",
+    "distance_km": "481–965",
+    "example_la": "LA→피닉스",
+    "example_chicago": "시카고→캔자스시티",
+    "delivery_days": "2일",
+    "rate_1lb": 12.69,
+    "rate_50lb": 41.42,
+    "rate_100lb": 77.81,
+    "note": ""
+  },
+  {
+    "zone": 5,
+    "distance_miles": "601–1,000",
+    "distance_km": "966–1,600",
+    "example_la": "LA→콜로라도",
+    "example_chicago": "시카고→애틀랜타",
+    "delivery_days": "2~3일",
+    "rate_1lb": 13.27,
+    "rate_50lb": 50.24,
+    "rate_100lb": 84.33,
+    "note": "중거리"
+  },
+  {
+    "zone": 6,
+    "distance_miles": "1,001–1,400",
+    "distance_km": "1,601–2,250",
+    "example_la": "LA→오클라호마",
+    "example_chicago": "시카고→플로리다",
+    "delivery_days": "3일",
+    "rate_1lb": 13.72,
+    "rate_50lb": 63.3,
+    "rate_100lb": 99.26,
+    "note": ""
+  },
+  {
+    "zone": 7,
+    "distance_miles": "1,401–1,800",
+    "distance_km": "2,251–2,900",
+    "example_la": "LA→텍사스",
+    "example_chicago": "시카고→LA",
+    "delivery_days": "3~4일",
+    "rate_1lb": 13.93,
+    "rate_50lb": 76.47,
+    "rate_100lb": 109.97,
+    "note": ""
+  },
+  {
+    "zone": 8,
+    "distance_miles": "1,801+",
+    "distance_km": "2,901+",
+    "example_la": "LA→뉴욕",
+    "example_chicago": "시카고→LA",
+    "delivery_days": "4~5일",
+    "rate_1lb": 14.17,
+    "rate_50lb": 84.99,
+    "rate_100lb": 121.15,
+    "note": "대륙횡단"
+  }
+]

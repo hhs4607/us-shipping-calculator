@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📦 FedEx Ground 2025 배송비 계산기 — MUSICUS</title>
+  <meta name="description"
+    content="FedEx Ground 2025 미국 국내 배송비 계산기. Zone별 요금, 추가요금(AHS/Oversize), Residential, DAS를 즉시 계산합니다.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <div class="container">
+
+    <!-- ═══ Header ═══ -->
+    <header class="header">
+      <div class="header-brand">
+        <span class="logo">📦</span>
+        <div>
+          <h1>FedEx Ground 2025 배송비 계산기</h1>
+          <div class="subtitle">MUSICUS — US Domestic Shipping Calculator (V3)</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-help" id="btn-glossary" title="배송 용어 해설">📖 용어사전</button>
+        <button class="btn btn-help" id="btn-guide" title="사용 가이드">❓ 사용법</button>
+        <button class="btn" id="btn-share" title="링크 공유">🔗 공유</button>
+        <button class="btn" id="btn-save" title="시나리오 저장">💾 저장</button>
+        <button class="btn" id="btn-load" title="시나리오 불러오기">📂 불러오기</button>
+        <button class="btn btn-sm" id="btn-export" title="JSON 내보내기">⬇ Export</button>
+        <button class="btn btn-sm" id="btn-import" title="JSON 가져오기">⬆ Import</button>
+      </div>
+    </header>
+
+    <!-- ═══ Settings ═══ -->
+    <section class="card">
+      <div class="card-title"><span class="icon">⚙️</span> 공통 설정</div>
+      <div class="settings-grid">
+        <div class="setting-group">
+          <label for="zone-select">Zone (배송 구간) <span class="tip"
+              data-tip="출발지~도착지 거리 기반 구간. Zone 2(근거리)~Zone 8(장거리). 거리가 멀수록 운임 상승">ⓘ</span></label>
+          <select id="zone-select">
+            <option value="2">Zone 2 — 근거리 (0–150 mi)</option>
+            <option value="3">Zone 3 — (151–300 mi)</option>
+            <option value="4">Zone 4 — (301–600 mi)</option>
+            <option value="5">Zone 5 — 중거리 (601–1,000 mi)</option>
+            <option value="6">Zone 6 — (1,001–1,400 mi)</option>
+            <option value="7">Zone 7 — (1,401–1,800 mi)</option>
+            <option value="8">Zone 8 — 장거리 (1,801+ mi)</option>
+          </select>
+        </div>
+        <div class="setting-group">
+          <label for="fuel-input">연료할증 (%) <span class="tip"
+              data-tip="기본운임에 추가되는 유류비 비율. FedEx 공지 기준 (보통 10~15%)">ⓘ</span></label>
+          <input type="number" id="fuel-input" value="0" min="0" max="100" step="0.1">
+        </div>
+        <div class="setting-group">
+          <label for="delivery-type">배송지 유형 <span class="tip"
+              data-tip="Commercial=사업장(별도 할증 없음), Residential=주거지(개당 $5.95 추가)">ⓘ</span></label>
+          <select id="delivery-type">
+            <option value="commercial">Commercial</option>
+            <option value="residential">Residential</option>
+          </select>
+        </div>
+        <div class="setting-group">
+          <label for="das-tier">DAS 티어 <span class="tip"
+              data-tip="배송지역 할증(Delivery Area Surcharge). 도착지 ZIP코드에 따라 추가 요금 부과. 대부분 None">ⓘ</span></label>
+          <select id="das-tier">
+            <option value="None">None</option>
+            <option value="Base">Base</option>
+            <option value="Extended">Extended</option>
+            <option value="Remote">Remote</option>
+            <option value="Alaska">Alaska</option>
+            <option value="Hawaii">Hawaii</option>
+            <option value="Intra-Hawaii">Intra-Hawaii</option>
+          </select>
+        </div>
+        <div class="setting-group">
+          <label>치수 단위</label>
+          <div class="unit-toggle" id="unit-dim">
+            <button data-value="mm" class="active">mm</button>
+            <button data-value="inch">inch</button>
+          </div>
+        </div>
+        <div class="setting-group">
+          <label>중량 단위</label>
+          <div class="unit-toggle" id="unit-weight">
+            <button data-value="kg" class="active">kg</button>
+            <button data-value="lb">lb</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ Items Input ═══ -->
+    <section class="card">
+      <div class="card-title"><span class="icon">📋</span> 품목 입력</div>
+      <div class="table-scroll">
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>품명</th>
+              <th id="th-dim-l">L(mm)</th>
+              <th id="th-dim-w">W(mm)</th>
+              <th id="th-dim-h">H(mm)</th>
+              <th id="th-weight">중량(kg)</th>
+              <th>수량</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="items-tbody"></tbody>
+        </table>
+      </div>
+      <div class="table-actions">
+        <button class="btn btn-primary" id="btn-add-row">➕ 행 추가</button>
+        <button class="btn" id="btn-reset">🔄 기본값 초기화</button>
+      </div>
+    </section>
+
+    <!-- ═══ Results ═══ -->
+    <section class="card">
+      <div class="card-title"><span class="icon">📊</span> 계산 결과</div>
+      <div class="table-scroll">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>품명</th>
+              <th><span class="tip" data-tip="실제 저울 중량을 lb로 환산한 값">실중량(lb)</span></th>
+              <th><span class="tip" data-tip="가로×세로×높이(inch) ÷ 139. 박스가 크면 실중량보다 높아짐">부피중량(lb)</span></th>
+              <th><span class="tip" data-tip="실중량과 부피중량 중 큰 값. 이 중량으로 요금 산정">청구중량(lb)</span></th>
+              <th>기본운임</th>
+              <th>연료할증</th>
+              <th>운임소계</th>
+              <th><span class="tip" data-tip="추가핸들링(AHS-Dim/Wgt), 대형(Oversize), 초과(Unauth) 등 추가 수수료 종류">SC종류</span></th>
+              <th><span class="tip" data-tip="해당 SC가 부과된 구체적 사유 (예: 최장변 초과, 실중량 초과)">SC근거</span></th>
+              <th>SC금액</th>
+              <th><span class="tip" data-tip="주거지 배송 할증 ($5.95/개). Commercial이면 $0">Resi.</span></th>
+              <th><span class="tip" data-tip="배송지역 할증. 선택한 DAS 티어에 따른 추가 요금">DAS</span></th>
+              <th>수량</th>
+              <th>총배송비</th>
+            </tr>
+          </thead>
+          <tbody id="results-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═══ Summary ═══ -->
+    <section class="card">
+      <div class="card-title"><span class="icon">💰</span> 요약</div>
+      <div class="summary-grid">
+        <div class="summary-item">
+          <span class="label">활성 품목</span>
+          <span class="value" id="sum-count">0건 / 0개</span>
+        </div>
+        <div class="summary-item">
+          <span class="label">운임 합계</span>
+          <span class="value" id="sum-rate">$0.00</span>
+        </div>
+        <div class="summary-item">
+          <span class="label">SC 합계</span>
+          <span class="value" id="sum-sc">$0.00</span>
+        </div>
+        <div class="summary-item">
+          <span class="label">Residential</span>
+          <span class="value" id="sum-resi">$0.00</span>
+        </div>
+        <div class="summary-item">
+          <span class="label">DAS</span>
+          <span class="value" id="sum-das">$0.00</span>
+        </div>
+        <div class="summary-item grand-total">
+          <span class="label">총 배송비</span>
+          <span class="value" id="sum-grand">$0.00</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ Footer ═══ -->
+    <footer class="footer">
+      <p>⚠️ 참고용 계산기입니다. 실제 FedEx 청구액과 다를 수 있습니다.</p>
+      <p id="meta-info"></p>
+      <p>© 2025 MUSICUS</p>
+    </footer>
+
+  </div>
+
+  <!-- ═══ Modal Overlay ═══ -->
+  <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this) UI.closeModal()">
+    <div class="modal" id="modal-content"></div>
+  </div>
+
+  <!-- ═══ Toast ═══ -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ═══ Scripts ═══ -->
+  <script src="js/calculator.js"></script>
+  <script src="js/data-loader.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/ui.js"></script>
+
+</body>
+
+</html>
