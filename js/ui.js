@@ -4,112 +4,140 @@
  */
 
 const UI = (() => {
-    let data = null;       // { rates, surcharges, defaults, zones, meta }
-    let state = null;      // { zone, fuelPct, deliveryType, dasTier, unitDim, unitWeight, items }
-    let itemIdCounter = 0;
+  let data = null;       // { rates, surcharges, defaults, zones, meta }
+  let state = null;      // { zone, fuelPct, deliveryType, dasTier, unitDim, unitWeight, items }
+  let itemIdCounter = 0;
 
-    // ─── Initialization ─────────────────────────────────────────────
+  // ─── Initialization ─────────────────────────────────────────────
 
-    async function init() {
-        try {
-            data = await DataLoader.loadAll();
-        } catch (e) {
-            console.error('Data load failed:', e);
-            showToast('데이터 로드 실패: ' + e.message, 'error');
-            return;
-        }
-
-        const urlState = Storage.loadFromURL();
-        if (urlState) {
-            // Ensure V2 fields exist
-            state = urlState;
-            if (!state.deliveryType) state.deliveryType = 'commercial';
-            if (!state.dasTier) state.dasTier = 'None';
-            itemIdCounter = state.items.length;
-        } else {
-            resetToDefaults();
-        }
-
-        renderSettings();
-        renderItemsTable();
-        recalculate();
-        renderMeta();
-        bindEvents();
+  async function init() {
+    try {
+      data = await DataLoader.loadAll();
+    } catch (e) {
+      console.error('Data load failed:', e);
+      showToast('데이터 로드 실패: ' + e.message, 'error');
+      return;
     }
 
-    function resetToDefaults() {
-        const defaults = data.defaults;
-        state = {
-            zone: defaults.zone || 2,
-            fuelPct: defaults.fuel_pct || 0,
-            deliveryType: 'commercial',
-            dasTier: 'None',
-            unitDim: 'mm',
-            unitWeight: 'kg',
-            items: defaults.items.map((item, i) => ({
-                id: i,
-                name: item.name,
-                L_mm: parseDimStr(item.dimensions_mm).L,
-                W_mm: parseDimStr(item.dimensions_mm).W,
-                H_mm: parseDimStr(item.dimensions_mm).H,
-                weightKg: item.weight_kg,
-                qty: item.qty,
-            })),
-        };
-        itemIdCounter = state.items.length;
+    const urlState = Storage.loadFromURL();
+    if (urlState) {
+      // Ensure V2 fields exist
+      state = urlState;
+      if (!state.deliveryType) state.deliveryType = 'commercial';
+      if (!state.dasTier) state.dasTier = 'None';
+      itemIdCounter = state.items.length;
+    } else {
+      resetToDefaults();
     }
 
-    function parseDimStr(str) {
-        if (!str) return { L: 0, W: 0, H: 0 };
-        const parts = str.split('*').map(Number);
-        return { L: parts[0] || 0, W: parts[1] || 0, H: parts[2] || 0 };
+    renderSettings();
+    renderItemsTable();
+    recalculate();
+    renderMeta();
+    bindEvents();
+  }
+
+  function resetToDefaults() {
+    const defaults = data.defaults;
+    state = {
+      zone: defaults.zone || 2,
+      fuelPct: defaults.fuel_pct || 0,
+      deliveryType: 'commercial',
+      dasTier: 'None',
+      unitDim: 'mm',
+      unitWeight: 'kg',
+      items: defaults.items.map((item, i) => ({
+        id: i,
+        name: item.name,
+        L_mm: parseDimStr(item.dimensions_mm).L,
+        W_mm: parseDimStr(item.dimensions_mm).W,
+        H_mm: parseDimStr(item.dimensions_mm).H,
+        weightKg: item.weight_kg,
+        qty: item.qty,
+      })),
+    };
+    itemIdCounter = state.items.length;
+  }
+
+  function loadSet(setKey) {
+    const defaults = data.defaults;
+    let items;
+    if (setKey === 'all') {
+      items = defaults.items;
+    } else if (defaults.sets && defaults.sets[setKey]) {
+      items = defaults.sets[setKey];
+    } else {
+      return;
     }
+    state.items = items.map((item, i) => ({
+      id: i,
+      name: item.name,
+      L_mm: parseDimStr(item.dimensions_mm).L,
+      W_mm: parseDimStr(item.dimensions_mm).W,
+      H_mm: parseDimStr(item.dimensions_mm).H,
+      weightKg: item.weight_kg,
+      qty: item.qty,
+    }));
+    itemIdCounter = state.items.length;
+    renderItemsTable();
+    recalculate();
+    // Update active button
+    document.querySelectorAll('.btn-set').forEach(b => b.classList.remove('active'));
+    const activeBtn = document.querySelector(`.btn-set[data-set="${setKey}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+  }
 
-    function getCurrentState() {
-        return JSON.parse(JSON.stringify(state));
-    }
+  function parseDimStr(str) {
+    if (!str) return { L: 0, W: 0, H: 0 };
+    const parts = str.split('*').map(Number);
+    return { L: parts[0] || 0, W: parts[1] || 0, H: parts[2] || 0 };
+  }
 
-    // ─── Settings ───────────────────────────────────────────────────
+  function getCurrentState() {
+    return JSON.parse(JSON.stringify(state));
+  }
 
-    function renderSettings() {
-        document.getElementById('zone-select').value = state.zone;
-        document.getElementById('fuel-input').value = state.fuelPct;
-        document.getElementById('delivery-type').value = state.deliveryType;
-        document.getElementById('das-tier').value = state.dasTier;
-        updateUnitToggle('dim', state.unitDim);
-        updateUnitToggle('weight', state.unitWeight);
-    }
+  // ─── Settings ───────────────────────────────────────────────────
 
-    function updateUnitToggle(type, value) {
-        const btns = document.querySelectorAll(`#unit-${type} button`);
-        btns.forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.value === value);
-        });
-    }
+  function renderSettings() {
+    document.getElementById('zone-select').value = state.zone;
+    document.getElementById('fuel-input').value = state.fuelPct;
+    document.getElementById('delivery-type').value = state.deliveryType;
+    document.getElementById('das-tier').value = state.dasTier;
+    updateUnitToggle('dim', state.unitDim);
+    updateUnitToggle('weight', state.unitWeight);
+  }
 
-    // ─── Items Table ────────────────────────────────────────────────
+  function updateUnitToggle(type, value) {
+    const btns = document.querySelectorAll(`#unit-${type} button`);
+    btns.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.value === value);
+    });
+  }
 
-    function renderItemsTable() {
-        const tbody = document.getElementById('items-tbody');
-        tbody.innerHTML = '';
+  // ─── Items Table ────────────────────────────────────────────────
 
-        document.getElementById('th-dim-l').textContent = state.unitDim === 'mm' ? 'L(mm)' : 'L(in)';
-        document.getElementById('th-dim-w').textContent = state.unitDim === 'mm' ? 'W(mm)' : 'W(in)';
-        document.getElementById('th-dim-h').textContent = state.unitDim === 'mm' ? 'H(mm)' : 'H(in)';
-        document.getElementById('th-weight').textContent = state.unitWeight === 'kg' ? '중량(kg)' : '중량(lb)';
+  function renderItemsTable() {
+    const tbody = document.getElementById('items-tbody');
+    tbody.innerHTML = '';
 
-        state.items.forEach((item, idx) => {
-            const tr = document.createElement('tr');
-            tr.dataset.id = item.id;
+    document.getElementById('th-dim-l').textContent = state.unitDim === 'mm' ? 'L(mm)' : 'L(in)';
+    document.getElementById('th-dim-w').textContent = state.unitDim === 'mm' ? 'W(mm)' : 'W(in)';
+    document.getElementById('th-dim-h').textContent = state.unitDim === 'mm' ? 'H(mm)' : 'H(in)';
+    document.getElementById('th-weight').textContent = state.unitWeight === 'kg' ? '중량(kg)' : '중량(lb)';
 
-            const displayL = state.unitDim === 'mm' ? item.L_mm : mmToInDisplay(item.L_mm);
-            const displayW = state.unitDim === 'mm' ? item.W_mm : mmToInDisplay(item.W_mm);
-            const displayH = state.unitDim === 'mm' ? item.H_mm : mmToInDisplay(item.H_mm);
-            const displayWeight = state.unitWeight === 'kg' ? item.weightKg : round2(item.weightKg * 2.2046);
+    state.items.forEach((item, idx) => {
+      const tr = document.createElement('tr');
+      tr.dataset.id = item.id;
 
-            const dimStep = state.unitDim === 'mm' ? '1' : '0.1';
+      const displayL = state.unitDim === 'mm' ? item.L_mm : mmToInDisplay(item.L_mm);
+      const displayW = state.unitDim === 'mm' ? item.W_mm : mmToInDisplay(item.W_mm);
+      const displayH = state.unitDim === 'mm' ? item.H_mm : mmToInDisplay(item.H_mm);
+      const displayWeight = state.unitWeight === 'kg' ? item.weightKg : round2(item.weightKg * 2.2046);
 
-            tr.innerHTML = `
+      const dimStep = state.unitDim === 'mm' ? '1' : '0.1';
+
+      tr.innerHTML = `
         <td>${idx + 1}</td>
         <td><input type="text" class="input-name" data-field="name" value="${escHtml(item.name)}" placeholder="품명"></td>
         <td><input type="number" class="input-dim" data-field="L" value="${displayL}" min="0" step="${dimStep}"></td>
@@ -123,117 +151,117 @@ const UI = (() => {
         </td>
       `;
 
-            tr.querySelectorAll('input').forEach(input => {
-                input.addEventListener('input', () => onItemInput(item.id, input));
-                input.addEventListener('change', () => onItemInput(item.id, input));
-            });
+      tr.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', () => onItemInput(item.id, input));
+        input.addEventListener('change', () => onItemInput(item.id, input));
+      });
 
-            tbody.appendChild(tr);
-        });
-    }
+      tbody.appendChild(tr);
+    });
+  }
 
-    function mmToInDisplay(mm) { return round2(mm / 25.4); }
+  function mmToInDisplay(mm) { return round2(mm / 25.4); }
 
-    function onItemInput(id, input) {
-        const item = state.items.find(i => i.id === id);
-        if (!item) return;
+  function onItemInput(id, input) {
+    const item = state.items.find(i => i.id === id);
+    if (!item) return;
 
-        const field = input.dataset.field;
-        const val = input.value;
+    const field = input.dataset.field;
+    const val = input.value;
 
-        if (field === 'name') item.name = val;
-        else if (field === 'L') item.L_mm = state.unitDim === 'mm' ? Number(val) : Number(val) * 25.4;
-        else if (field === 'W') item.W_mm = state.unitDim === 'mm' ? Number(val) : Number(val) * 25.4;
-        else if (field === 'H') item.H_mm = state.unitDim === 'mm' ? Number(val) : Number(val) * 25.4;
-        else if (field === 'weight') item.weightKg = state.unitWeight === 'kg' ? Number(val) : Number(val) / 2.2046;
-        else if (field === 'qty') item.qty = Math.max(0, Math.floor(Number(val)));
+    if (field === 'name') item.name = val;
+    else if (field === 'L') item.L_mm = state.unitDim === 'mm' ? Number(val) : Number(val) * 25.4;
+    else if (field === 'W') item.W_mm = state.unitDim === 'mm' ? Number(val) : Number(val) * 25.4;
+    else if (field === 'H') item.H_mm = state.unitDim === 'mm' ? Number(val) : Number(val) * 25.4;
+    else if (field === 'weight') item.weightKg = state.unitWeight === 'kg' ? Number(val) : Number(val) / 2.2046;
+    else if (field === 'qty') item.qty = Math.max(0, Math.floor(Number(val)));
 
-        recalculate();
-        updateURL();
-    }
+    recalculate();
+    updateURL();
+  }
 
-    function addRow() {
-        state.items.push({
-            id: itemIdCounter++,
-            name: '', L_mm: 0, W_mm: 0, H_mm: 0, weightKg: 0, qty: 1,
-        });
-        renderItemsTable();
-        recalculate();
-    }
+  function addRow() {
+    state.items.push({
+      id: itemIdCounter++,
+      name: '', L_mm: 0, W_mm: 0, H_mm: 0, weightKg: 0, qty: 1,
+    });
+    renderItemsTable();
+    recalculate();
+  }
 
-    function deleteRow(id) {
-        state.items = state.items.filter(i => i.id !== id);
-        renderItemsTable();
-        recalculate();
-        updateURL();
-    }
+  function deleteRow(id) {
+    state.items = state.items.filter(i => i.id !== id);
+    renderItemsTable();
+    recalculate();
+    updateURL();
+  }
 
-    function duplicateRow(id) {
-        const item = state.items.find(i => i.id === id);
-        if (!item) return;
-        const idx = state.items.indexOf(item);
-        const clone = { ...item, id: itemIdCounter++, name: item.name + ' (copy)' };
-        state.items.splice(idx + 1, 0, clone);
-        renderItemsTable();
-        recalculate();
-        updateURL();
-    }
+  function duplicateRow(id) {
+    const item = state.items.find(i => i.id === id);
+    if (!item) return;
+    const idx = state.items.indexOf(item);
+    const clone = { ...item, id: itemIdCounter++, name: item.name + ' (copy)' };
+    state.items.splice(idx + 1, 0, clone);
+    renderItemsTable();
+    recalculate();
+    updateURL();
+  }
 
-    // ─── Calculation ────────────────────────────────────────────────
+  // ─── Calculation ────────────────────────────────────────────────
 
-    function recalculate() {
-        const isResidential = state.deliveryType === 'residential';
-        const calcItems = state.items.map(item => ({
-            name: item.name,
-            L_cm: item.L_mm / 10,
-            W_cm: item.W_mm / 10,
-            H_cm: item.H_mm / 10,
-            weightKg: item.weightKg,
-            qty: item.qty,
-        }));
+  function recalculate() {
+    const isResidential = state.deliveryType === 'residential';
+    const calcItems = state.items.map(item => ({
+      name: item.name,
+      L_cm: item.L_mm / 10,
+      W_cm: item.W_mm / 10,
+      H_cm: item.H_mm / 10,
+      weightKg: item.weightKg,
+      qty: item.qty,
+    }));
 
-        const result = calcAll(
-            calcItems,
-            state.zone,
-            state.fuelPct,
-            isResidential,
-            state.dasTier,
-            data.rates,
-            data.surcharges
-        );
+    const result = calcAll(
+      calcItems,
+      state.zone,
+      state.fuelPct,
+      isResidential,
+      state.dasTier,
+      data.rates,
+      data.surcharges
+    );
 
-        renderResults(result);
-        renderSummary(result);
-    }
+    renderResults(result);
+    renderSummary(result);
+  }
 
-    // ─── Results ────────────────────────────────────────────────────
+  // ─── Results ────────────────────────────────────────────────────
 
-    function renderResults(result) {
-        const tbody = document.getElementById('results-tbody');
-        tbody.innerHTML = '';
+  function renderResults(result) {
+    const tbody = document.getElementById('results-tbody');
+    tbody.innerHTML = '';
 
-        const isResidential = state.deliveryType === 'residential';
+    const isResidential = state.deliveryType === 'residential';
 
-        state.items.forEach((item, idx) => {
-            const calcItem = {
-                name: item.name,
-                L_cm: item.L_mm / 10,
-                W_cm: item.W_mm / 10,
-                H_cm: item.H_mm / 10,
-                weightKg: item.weightKg,
-                qty: item.qty,
-            };
+    state.items.forEach((item, idx) => {
+      const calcItem = {
+        name: item.name,
+        L_cm: item.L_mm / 10,
+        W_cm: item.W_mm / 10,
+        H_cm: item.H_mm / 10,
+        weightKg: item.weightKg,
+        qty: item.qty,
+      };
 
-            const line = item.qty > 0
-                ? calcLineItem(calcItem, state.zone, state.fuelPct, isResidential, state.dasTier, data.rates, data.surcharges)
-                : null;
+      const line = item.qty > 0
+        ? calcLineItem(calcItem, state.zone, state.fuelPct, isResidential, state.dasTier, data.rates, data.surcharges)
+        : null;
 
-            const tr = document.createElement('tr');
-            if (item.qty === 0) tr.style.opacity = '0.35';
+      const tr = document.createElement('tr');
+      if (item.qty === 0) tr.style.opacity = '0.35';
 
-            if (line) {
-                const scClass = scTypeToClass(line.scType);
-                tr.innerHTML = `
+      if (line) {
+        const scClass = scTypeToClass(line.scType);
+        tr.innerHTML = `
           <td>${idx + 1}</td>
           <td style="text-align:left">${escHtml(line.name)}</td>
           <td>${fmt(line.actualLb)}</td>
@@ -250,174 +278,179 @@ const UI = (() => {
           <td>${calcItem.qty}</td>
           <td><strong>$${fmt(line.lineTotal)}</strong></td>
         `;
-            } else {
-                tr.innerHTML = `
+      } else {
+        tr.innerHTML = `
           <td>${idx + 1}</td>
           <td style="text-align:left">${escHtml(calcItem.name)}</td>
           <td colspan="13" style="color:var(--text-m)">수량 0 — 계산 제외</td>
         `;
-            }
+      }
 
-            tbody.appendChild(tr);
-        });
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderSummary(result) {
+    document.getElementById('sum-rate').textContent = '$' + fmt(result.rateSubtotal);
+    document.getElementById('sum-sc').textContent = '$' + fmt(result.scSubtotal);
+    document.getElementById('sum-resi').textContent = '$' + fmt(result.residentialSubtotal);
+    document.getElementById('sum-das').textContent = '$' + fmt(result.dasSubtotal);
+    document.getElementById('sum-grand').textContent = '$' + fmt(result.grandTotal);
+    document.getElementById('sum-count').textContent =
+      result.lines.length + '건 / ' + result.lines.reduce((s, l) => s + l.qty, 0) + '개';
+  }
+
+  // ─── Meta Footer ────────────────────────────────────────────────
+
+  function renderMeta() {
+    const footer = document.getElementById('meta-info');
+    if (data.meta) {
+      footer.textContent = `Data v${data.meta.data_version} | ${data.meta.service} ${data.meta.year} | DIM ÷${data.meta.dim_divisor}`;
     }
+  }
 
-    function renderSummary(result) {
-        document.getElementById('sum-rate').textContent = '$' + fmt(result.rateSubtotal);
-        document.getElementById('sum-sc').textContent = '$' + fmt(result.scSubtotal);
-        document.getElementById('sum-resi').textContent = '$' + fmt(result.residentialSubtotal);
-        document.getElementById('sum-das').textContent = '$' + fmt(result.dasSubtotal);
-        document.getElementById('sum-grand').textContent = '$' + fmt(result.grandTotal);
-        document.getElementById('sum-count').textContent =
-            result.lines.length + '건 / ' + result.lines.reduce((s, l) => s + l.qty, 0) + '개';
-    }
+  // ─── URL Sync ───────────────────────────────────────────────────
 
-    // ─── Meta Footer ────────────────────────────────────────────────
+  function updateURL() {
+    Storage.saveToURL(getCurrentState());
+  }
 
-    function renderMeta() {
-        const footer = document.getElementById('meta-info');
-        if (data.meta) {
-            footer.textContent = `Data v${data.meta.data_version} | ${data.meta.service} ${data.meta.year} | DIM ÷${data.meta.dim_divisor}`;
+  // ─── Events ─────────────────────────────────────────────────────
+
+  function bindEvents() {
+    // Zone
+    document.getElementById('zone-select').addEventListener('change', (e) => {
+      state.zone = Number(e.target.value);
+      recalculate();
+      updateURL();
+    });
+
+    // Fuel
+    document.getElementById('fuel-input').addEventListener('input', (e) => {
+      state.fuelPct = Number(e.target.value) || 0;
+      recalculate();
+      updateURL();
+    });
+
+    // Delivery Type (V2)
+    document.getElementById('delivery-type').addEventListener('change', (e) => {
+      state.deliveryType = e.target.value;
+      recalculate();
+      updateURL();
+    });
+
+    // DAS Tier (V2)
+    document.getElementById('das-tier').addEventListener('change', (e) => {
+      state.dasTier = e.target.value;
+      recalculate();
+      updateURL();
+    });
+
+    // Unit toggles
+    document.querySelectorAll('#unit-dim button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.unitDim = btn.dataset.value;
+        updateUnitToggle('dim', state.unitDim);
+        renderItemsTable();
+        updateURL();
+      });
+    });
+
+    document.querySelectorAll('#unit-weight button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.unitWeight = btn.dataset.value;
+        updateUnitToggle('weight', state.unitWeight);
+        renderItemsTable();
+        updateURL();
+      });
+    });
+
+    // Add row
+    document.getElementById('btn-add-row').addEventListener('click', addRow);
+
+    // Reset
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      resetToDefaults();
+      renderSettings();
+      renderItemsTable();
+      recalculate();
+      updateURL();
+      showToast('기본값으로 초기화되었습니다', 'success');
+    });
+
+    // Share
+    document.getElementById('btn-share').addEventListener('click', () => {
+      const url = Storage.getShareURL(getCurrentState());
+      navigator.clipboard.writeText(url).then(() => {
+        showToast('링크가 클립보드에 복사되었습니다!', 'success');
+      }).catch(() => {
+        prompt('링크를 복사하세요:', url);
+      });
+    });
+
+    // Save scenario
+    document.getElementById('btn-save').addEventListener('click', showSaveModal);
+
+    // Load scenario
+    document.getElementById('btn-load').addEventListener('click', showLoadModal);
+
+    // Export JSON
+    document.getElementById('btn-export').addEventListener('click', () => {
+      Storage.exportJSON(getCurrentState());
+      showToast('JSON 파일 내보내기 완료', 'success');
+    });
+
+    // Import JSON
+    document.getElementById('btn-import').addEventListener('click', () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = async (e) => {
+        try {
+          const importedState = await Storage.importJSON(e.target.files[0]);
+          state = importedState;
+          if (!state.deliveryType) state.deliveryType = 'commercial';
+          if (!state.dasTier) state.dasTier = 'None';
+          itemIdCounter = state.items.length;
+          renderSettings();
+          renderItemsTable();
+          recalculate();
+          updateURL();
+          showToast('JSON 파일 가져오기 완료', 'success');
+        } catch (err) {
+          showToast('파일 오류: ' + err.message, 'error');
         }
-    }
+      };
+      input.click();
+    });
 
-    // ─── URL Sync ───────────────────────────────────────────────────
+    // Glossary
+    document.getElementById('btn-glossary').addEventListener('click', showGlossaryModal);
 
-    function updateURL() {
-        Storage.saveToURL(getCurrentState());
-    }
+    // Guide
+    document.getElementById('btn-guide').addEventListener('click', showGuideModal);
 
-    // ─── Events ─────────────────────────────────────────────────────
+    // Tooltip click support (mobile)
+    document.addEventListener('click', (e) => {
+      const tip = e.target.closest('.tip');
+      document.querySelectorAll('.tip.active').forEach(t => {
+        if (t !== tip) t.classList.remove('active');
+      });
+      if (tip) tip.classList.toggle('active');
+    });
 
-    function bindEvents() {
-        // Zone
-        document.getElementById('zone-select').addEventListener('change', (e) => {
-            state.zone = Number(e.target.value);
-            recalculate();
-            updateURL();
-        });
+    // Set selector buttons (L / M / S / All)
+    document.querySelectorAll('.btn-set').forEach(btn => {
+      btn.addEventListener('click', () => loadSet(btn.dataset.set));
+    });
+  }
 
-        // Fuel
-        document.getElementById('fuel-input').addEventListener('input', (e) => {
-            state.fuelPct = Number(e.target.value) || 0;
-            recalculate();
-            updateURL();
-        });
+  // ─── Modals ─────────────────────────────────────────────────────
 
-        // Delivery Type (V2)
-        document.getElementById('delivery-type').addEventListener('change', (e) => {
-            state.deliveryType = e.target.value;
-            recalculate();
-            updateURL();
-        });
-
-        // DAS Tier (V2)
-        document.getElementById('das-tier').addEventListener('change', (e) => {
-            state.dasTier = e.target.value;
-            recalculate();
-            updateURL();
-        });
-
-        // Unit toggles
-        document.querySelectorAll('#unit-dim button').forEach(btn => {
-            btn.addEventListener('click', () => {
-                state.unitDim = btn.dataset.value;
-                updateUnitToggle('dim', state.unitDim);
-                renderItemsTable();
-                updateURL();
-            });
-        });
-
-        document.querySelectorAll('#unit-weight button').forEach(btn => {
-            btn.addEventListener('click', () => {
-                state.unitWeight = btn.dataset.value;
-                updateUnitToggle('weight', state.unitWeight);
-                renderItemsTable();
-                updateURL();
-            });
-        });
-
-        // Add row
-        document.getElementById('btn-add-row').addEventListener('click', addRow);
-
-        // Reset
-        document.getElementById('btn-reset').addEventListener('click', () => {
-            resetToDefaults();
-            renderSettings();
-            renderItemsTable();
-            recalculate();
-            updateURL();
-            showToast('기본값으로 초기화되었습니다', 'success');
-        });
-
-        // Share
-        document.getElementById('btn-share').addEventListener('click', () => {
-            const url = Storage.getShareURL(getCurrentState());
-            navigator.clipboard.writeText(url).then(() => {
-                showToast('링크가 클립보드에 복사되었습니다!', 'success');
-            }).catch(() => {
-                prompt('링크를 복사하세요:', url);
-            });
-        });
-
-        // Save scenario
-        document.getElementById('btn-save').addEventListener('click', showSaveModal);
-
-        // Load scenario
-        document.getElementById('btn-load').addEventListener('click', showLoadModal);
-
-        // Export JSON
-        document.getElementById('btn-export').addEventListener('click', () => {
-            Storage.exportJSON(getCurrentState());
-            showToast('JSON 파일 내보내기 완료', 'success');
-        });
-
-        // Import JSON
-        document.getElementById('btn-import').addEventListener('click', () => {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.onchange = async (e) => {
-                try {
-                    const importedState = await Storage.importJSON(e.target.files[0]);
-                    state = importedState;
-                    if (!state.deliveryType) state.deliveryType = 'commercial';
-                    if (!state.dasTier) state.dasTier = 'None';
-                    itemIdCounter = state.items.length;
-                    renderSettings();
-                    renderItemsTable();
-                    recalculate();
-                    updateURL();
-                    showToast('JSON 파일 가져오기 완료', 'success');
-                } catch (err) {
-                    showToast('파일 오류: ' + err.message, 'error');
-                }
-            };
-            input.click();
-        });
-
-        // Glossary
-        document.getElementById('btn-glossary').addEventListener('click', showGlossaryModal);
-
-        // Guide
-        document.getElementById('btn-guide').addEventListener('click', showGuideModal);
-
-        // Tooltip click support (mobile)
-        document.addEventListener('click', (e) => {
-            const tip = e.target.closest('.tip');
-            document.querySelectorAll('.tip.active').forEach(t => {
-                if (t !== tip) t.classList.remove('active');
-            });
-            if (tip) tip.classList.toggle('active');
-        });
-    }
-
-    // ─── Modals ─────────────────────────────────────────────────────
-
-    function showSaveModal() {
-        const overlay = document.getElementById('modal-overlay');
-        const modal = document.getElementById('modal-content');
-        modal.innerHTML = `
+  function showSaveModal() {
+    const overlay = document.getElementById('modal-overlay');
+    const modal = document.getElementById('modal-content');
+    modal.innerHTML = `
       <h3>💾 시나리오 저장</h3>
       <input type="text" id="scenario-name-input" placeholder="시나리오 이름 입력..." autofocus>
       <div class="modal-actions">
@@ -425,31 +458,31 @@ const UI = (() => {
         <button class="btn btn-primary" onclick="UI.doSave()">저장</button>
       </div>
     `;
-        overlay.classList.add('active');
-        setTimeout(() => document.getElementById('scenario-name-input')?.focus(), 100);
-    }
+    overlay.classList.add('active');
+    setTimeout(() => document.getElementById('scenario-name-input')?.focus(), 100);
+  }
 
-    function doSave() {
-        const name = document.getElementById('scenario-name-input')?.value?.trim();
-        if (!name) { showToast('이름을 입력하세요', 'error'); return; }
-        Storage.saveScenario(name, getCurrentState());
-        closeModal();
-        showToast(`"${name}" 저장 완료`, 'success');
-    }
+  function doSave() {
+    const name = document.getElementById('scenario-name-input')?.value?.trim();
+    if (!name) { showToast('이름을 입력하세요', 'error'); return; }
+    Storage.saveScenario(name, getCurrentState());
+    closeModal();
+    showToast(`"${name}" 저장 완료`, 'success');
+  }
 
-    function showLoadModal() {
-        const overlay = document.getElementById('modal-overlay');
-        const modal = document.getElementById('modal-content');
-        const scenarios = Storage.getScenarios();
+  function showLoadModal() {
+    const overlay = document.getElementById('modal-overlay');
+    const modal = document.getElementById('modal-content');
+    const scenarios = Storage.getScenarios();
 
-        let listHtml = '';
-        if (scenarios.length === 0) {
-            listHtml = '<p style="color:var(--text-m); text-align:center; padding:2rem;">저장된 시나리오 없음</p>';
-        } else {
-            listHtml = '<div class="scenario-list">';
-            scenarios.forEach(s => {
-                const date = new Date(s.savedAt).toLocaleDateString('ko-KR');
-                listHtml += `
+    let listHtml = '';
+    if (scenarios.length === 0) {
+      listHtml = '<p style="color:var(--text-m); text-align:center; padding:2rem;">저장된 시나리오 없음</p>';
+    } else {
+      listHtml = '<div class="scenario-list">';
+      scenarios.forEach(s => {
+        const date = new Date(s.savedAt).toLocaleDateString('ko-KR');
+        listHtml += `
           <div class="scenario-item" onclick="UI.doLoad('${escHtml(s.name)}')">
             <div>
               <div class="name">${escHtml(s.name)}</div>
@@ -458,51 +491,51 @@ const UI = (() => {
             <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); UI.doDelete('${escHtml(s.name)}')">삭제</button>
           </div>
         `;
-            });
-            listHtml += '</div>';
-        }
+      });
+      listHtml += '</div>';
+    }
 
-        modal.innerHTML = `
+    modal.innerHTML = `
       <h3>📂 시나리오 불러오기</h3>
       ${listHtml}
       <div class="modal-actions">
         <button class="btn" onclick="UI.closeModal()">닫기</button>
       </div>
     `;
-        overlay.classList.add('active');
-    }
+    overlay.classList.add('active');
+  }
 
-    function doLoad(name) {
-        const loaded = Storage.loadScenario(name);
-        if (!loaded) { showToast('시나리오를 찾을 수 없습니다', 'error'); return; }
-        state = loaded;
-        if (!state.deliveryType) state.deliveryType = 'commercial';
-        if (!state.dasTier) state.dasTier = 'None';
-        itemIdCounter = state.items.length;
-        renderSettings();
-        renderItemsTable();
-        recalculate();
-        updateURL();
-        closeModal();
-        showToast(`"${name}" 불러오기 완료`, 'success');
-    }
+  function doLoad(name) {
+    const loaded = Storage.loadScenario(name);
+    if (!loaded) { showToast('시나리오를 찾을 수 없습니다', 'error'); return; }
+    state = loaded;
+    if (!state.deliveryType) state.deliveryType = 'commercial';
+    if (!state.dasTier) state.dasTier = 'None';
+    itemIdCounter = state.items.length;
+    renderSettings();
+    renderItemsTable();
+    recalculate();
+    updateURL();
+    closeModal();
+    showToast(`"${name}" 불러오기 완료`, 'success');
+  }
 
-    function doDelete(name) {
-        Storage.deleteScenario(name);
-        showLoadModal();
-        showToast(`"${name}" 삭제 완료`, 'success');
-    }
+  function doDelete(name) {
+    Storage.deleteScenario(name);
+    showLoadModal();
+    showToast(`"${name}" 삭제 완료`, 'success');
+  }
 
-    function closeModal() {
-        document.getElementById('modal-overlay').classList.remove('active');
-    }
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('active');
+  }
 
-    // ─── Help Modals ────────────────────────────────────────────────
+  // ─── Help Modals ────────────────────────────────────────────────
 
-    function showGlossaryModal() {
-        const overlay = document.getElementById('modal-overlay');
-        const modal = document.getElementById('modal-content');
-        modal.innerHTML = `
+  function showGlossaryModal() {
+    const overlay = document.getElementById('modal-overlay');
+    const modal = document.getElementById('modal-content');
+    modal.innerHTML = `
   <div class="help-modal">
     <h3>📖 배송 용어 사전</h3>
 
@@ -575,13 +608,13 @@ const UI = (() => {
     </div>
   </div>
 `;
-        overlay.classList.add('active');
-    }
+    overlay.classList.add('active');
+  }
 
-    function showGuideModal() {
-        const overlay = document.getElementById('modal-overlay');
-        const modal = document.getElementById('modal-content');
-        modal.innerHTML = `
+  function showGuideModal() {
+    const overlay = document.getElementById('modal-overlay');
+    const modal = document.getElementById('modal-content');
+    modal.innerHTML = `
   <div class="help-modal">
     <h3>❓ 사용 가이드</h3>
 
@@ -647,52 +680,52 @@ const UI = (() => {
     </div>
   </div>
 `;
-        overlay.classList.add('active');
-    }
+    overlay.classList.add('active');
+  }
 
-    // ─── Toast ──────────────────────────────────────────────────────
+  // ─── Toast ──────────────────────────────────────────────────────
 
-    function showToast(msg, type = 'success') {
-        const toast = document.getElementById('toast');
-        toast.textContent = msg;
-        toast.className = 'toast show ' + type;
-        setTimeout(() => toast.classList.remove('show'), 3000);
-    }
+  function showToast(msg, type = 'success') {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = 'toast show ' + type;
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }
 
-    // ─── Helpers ────────────────────────────────────────────────────
+  // ─── Helpers ────────────────────────────────────────────────────
 
-    function fmt(n) {
-        return (Math.round(n * 100) / 100).toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        });
-    }
+  function fmt(n) {
+    return (Math.round(n * 100) / 100).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
 
-    function round2(n) { return Math.round(n * 100) / 100; }
+  function round2(n) { return Math.round(n * 100) / 100; }
 
-    function escHtml(str) {
-        if (!str) return '';
-        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-    }
+  function escHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
 
-    function scTypeToClass(type) {
-        const map = {
-            'OK': 'sc-tag--ok',
-            'AHS-Dim': 'sc-tag--ahs-dim',
-            'AHS-Wgt': 'sc-tag--ahs-wgt',
-            'Oversize': 'sc-tag--oversize',
-            'Unauth': 'sc-tag--unauth',
-        };
-        return map[type] || '';
-    }
-
-    // ─── Public API ─────────────────────────────────────────────────
-
-    return {
-        init, addRow, deleteRow, duplicateRow,
-        doSave, doLoad, doDelete, closeModal, showToast,
-        showGlossaryModal, showGuideModal,
+  function scTypeToClass(type) {
+    const map = {
+      'OK': 'sc-tag--ok',
+      'AHS-Dim': 'sc-tag--ahs-dim',
+      'AHS-Wgt': 'sc-tag--ahs-wgt',
+      'Oversize': 'sc-tag--oversize',
+      'Unauth': 'sc-tag--unauth',
     };
+    return map[type] || '';
+  }
+
+  // ─── Public API ─────────────────────────────────────────────────
+
+  return {
+    init, addRow, deleteRow, duplicateRow,
+    doSave, doLoad, doDelete, closeModal, showToast,
+    showGlossaryModal, showGuideModal,
+  };
 })();
 
 document.addEventListener('DOMContentLoaded', UI.init);

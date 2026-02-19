@@ -462,9 +462,51 @@ body {
 /* ─── Table Action Bar ────────────────────────────────────────────── */
 .table-actions {
   display: flex;
-  gap: 0.4rem;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
   margin-top: 0.5rem;
   flex-wrap: wrap;
+}
+
+.set-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.set-label {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-right: 0.2rem;
+  white-space: nowrap;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.btn-set {
+  min-width: 2.2rem;
+  padding: 0.25rem 0.5rem !important;
+  font-size: 0.75rem !important;
+  background: var(--surface2) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-dim) !important;
+  transition: all 0.15s ease;
+}
+
+.btn-set:hover {
+  border-color: var(--accent) !important;
+  color: var(--text) !important;
+}
+
+.btn-set.active {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #000 !important;
+  font-weight: 600;
 }
 
 /* ─── Modal ───────────────────────────────────────────────────────── */

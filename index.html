@@ -115,8 +115,17 @@
         </table>
       </div>
       <div class="table-actions">
-        <button class="btn btn-primary" id="btn-add-row">➕ 행 추가</button>
-        <button class="btn" id="btn-reset">🔄 기본값 초기화</button>
+        <div class="set-selector">
+          <span class="set-label">세트 불러오기:</span>
+          <button class="btn btn-set active" data-set="all" id="btn-set-all">All</button>
+          <button class="btn btn-set" data-set="L" id="btn-set-l">L</button>
+          <button class="btn btn-set" data-set="M" id="btn-set-m">M</button>
+          <button class="btn btn-set" data-set="S" id="btn-set-s">S</button>
+        </div>
+        <div class="action-buttons">
+          <button class="btn btn-primary" id="btn-add-row">➕ 행 추가</button>
+          <button class="btn" id="btn-reset">🔄 기본값 초기화</button>
+        </div>
       </div>
     </section>
 
