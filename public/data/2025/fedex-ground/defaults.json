@@ -11,9 +11,9 @@
       },
       {
         "name": "wood (L)",
-        "dimensions_mm": "1200*600*180",
+        "dimensions_mm": "1200*1200*90",
         "weight_kg": 30.0,
-        "qty": 1
+        "qty": 4
       },
       {
         "name": "pillarpipe (L)",
@@ -75,7 +75,7 @@
       },
       {
         "name": "wood (S)",
-        "dimensions_mm": "1240*620*180",
+        "dimensions_mm": "1240*1240*90",
         "weight_kg": 31.0,
         "qty": 1
       },
@@ -110,9 +110,9 @@
     {
       "id": 2,
       "name": "wood (L)",
-      "dimensions_mm": "1200*600*180",
+      "dimensions_mm": "1200*1200*90",
       "weight_kg": 30.0,
-      "qty": 1
+      "qty": 4
     },
     {
       "id": 3,
@@ -180,7 +180,7 @@
     {
       "id": 12,
       "name": "wood (S)",
-      "dimensions_mm": "1240*620*180",
+      "dimensions_mm": "1240*1240*90",
       "weight_kg": 31.0,
       "qty": 1
     },
