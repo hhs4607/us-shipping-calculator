@@ -607,9 +607,10 @@ body {
 
 /* ─── SC Reason ───────────────────────────────────────────────────── */
 .sc-reason {
-  font-size: 0.6rem;
-  color: var(--text-m);
-  max-width: 140px;
+  font-size: 0.75rem;
+  color: var(--text);
+  opacity: 0.75;
+  max-width: 180px;
   word-break: keep-all;
 }
 
