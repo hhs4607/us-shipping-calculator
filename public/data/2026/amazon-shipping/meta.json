@@ -1,0 +1,20 @@
+{
+  "service": "Amazon Shipping",
+  "year": 2026,
+  "country": "US",
+  "source_file": "US_Service_Guide.pdf",
+  "effective_date": "2026-01-06",
+  "data_version": "2026.01",
+  "dim_divisor": 139,
+  "max_table_weight_lb": 150,
+  "weight_conversion": 2.2046,
+  "coverage": "Contiguous US (48 states)",
+  "notes": [
+    "Surcharge hierarchy: ExtraHeavy > LargePackage > AHS > NonStandard",
+    "Fuel surcharge based on weekly US average diesel price",
+    "No residential delivery surcharge",
+    "DIM: each dimension inch ceiling then L*W*H / 139",
+    "Girth = L + 2*(W+H) where L is longest side",
+    "Zone groups for SC: 2, 3-4, 5+"
+  ]
+}

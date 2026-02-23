@@ -1,0 +1,79 @@
+[
+  {
+    "zone": 2,
+    "distance_miles": "0-150",
+    "distance_km": "0-240",
+    "delivery_days": "1-2",
+    "sc_group": "2",
+    "rate_1lb": 11.99,
+    "rate_50lb": 29.14,
+    "rate_100lb": 74.61,
+    "note": "Nearest"
+  },
+  {
+    "zone": 3,
+    "distance_miles": "151-300",
+    "distance_km": "241-480",
+    "delivery_days": "2-3",
+    "sc_group": "3-4",
+    "rate_1lb": 12.21,
+    "rate_50lb": 36.44,
+    "rate_100lb": 75.29,
+    "note": ""
+  },
+  {
+    "zone": 4,
+    "distance_miles": "301-600",
+    "distance_km": "481-965",
+    "delivery_days": "3-4",
+    "sc_group": "3-4",
+    "rate_1lb": 13.26,
+    "rate_50lb": 43.70,
+    "rate_100lb": 82.48,
+    "note": ""
+  },
+  {
+    "zone": 5,
+    "distance_miles": "601-1000",
+    "distance_km": "966-1600",
+    "delivery_days": "4-5",
+    "sc_group": "5+",
+    "rate_1lb": 14.00,
+    "rate_50lb": 53.00,
+    "rate_100lb": 89.39,
+    "note": "Mid-distance"
+  },
+  {
+    "zone": 6,
+    "distance_miles": "1001-1400",
+    "distance_km": "1601-2250",
+    "delivery_days": "5-6",
+    "sc_group": "5+",
+    "rate_1lb": 14.47,
+    "rate_50lb": 66.78,
+    "rate_100lb": 105.22,
+    "note": ""
+  },
+  {
+    "zone": 7,
+    "distance_miles": "1401-1800",
+    "distance_km": "2251-2900",
+    "delivery_days": "6-7",
+    "sc_group": "5+",
+    "rate_1lb": 14.75,
+    "rate_50lb": 80.83,
+    "rate_100lb": 116.79,
+    "note": ""
+  },
+  {
+    "zone": 8,
+    "distance_miles": "1801+",
+    "distance_km": "2901+",
+    "delivery_days": "7+",
+    "sc_group": "5+",
+    "rate_1lb": 15.01,
+    "rate_50lb": 89.83,
+    "rate_100lb": 128.66,
+    "note": "Cross-country"
+  }
+]

@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>📦 FedEx Ground 2025 배송비 계산기 — MUSICUS</title>
+  <title>📦 US 배송비 계산기 — MUSICUS</title>
   <meta name="description"
-    content="FedEx Ground 2025 미국 국내 배송비 계산기. Zone별 요금, 추가요금(AHS/Oversize), Residential, DAS를 즉시 계산합니다.">
+    content="FedEx Ground / Amazon Shipping 미국 국내 배송비 계산기. Zone별 요금, 추가요금, DAS를 즉시 계산합니다.">
   <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -19,8 +19,8 @@
       <div class="header-brand">
         <span class="logo">📦</span>
         <div>
-          <h1>FedEx Ground 2025 배송비 계산기</h1>
-          <div class="subtitle">MUSICUS — US Domestic Shipping Calculator (V3)</div>
+          <h1 id="header-title">FedEx Ground 2025 배송비 계산기</h1>
+          <div class="subtitle">MUSICUS — US Domestic Shipping Calculator (V4)</div>
         </div>
       </div>
       <div class="header-actions">
@@ -31,8 +31,24 @@
         <button class="btn" id="btn-load" title="시나리오 불러오기">📂 불러오기</button>
         <button class="btn btn-sm" id="btn-export" title="JSON 내보내기">⬇ Export</button>
         <button class="btn btn-sm" id="btn-import" title="JSON 가져오기">⬆ Import</button>
+        <a href="benchmark.html" class="btn btn-sm btn-benchmark" title="계산기 검증 벤치마크 리포트">📊 벤치마크</a>
       </div>
     </header>
+
+    <!-- ═══ Carrier Toggle ═══ -->
+    <section class="card carrier-card">
+      <div class="card-title"><span class="icon">🚚</span> 배송사 선택</div>
+      <div class="carrier-toggle" id="carrier-toggle">
+        <button class="carrier-btn active" data-carrier="fedex-ground">
+          <span class="carrier-name">FedEx Ground</span>
+          <span class="carrier-year">2025</span>
+        </button>
+        <button class="carrier-btn" data-carrier="amazon-shipping">
+          <span class="carrier-name">Amazon Shipping</span>
+          <span class="carrier-year">2026</span>
+        </button>
+      </div>
+    </section>
 
     <!-- ═══ Settings ═══ -->
     <section class="card">
@@ -51,12 +67,39 @@
             <option value="8">Zone 8 — 장거리 (1,801+ mi)</option>
           </select>
         </div>
-        <div class="setting-group">
+
+        <!-- FedEx: user-input fuel % -->
+        <div class="setting-group" id="setting-fuel-pct">
           <label for="fuel-input">연료할증 (%) <span class="tip"
               data-tip="기본운임에 추가되는 유류비 비율. FedEx 공지 기준 (보통 10~15%)">ⓘ</span></label>
           <input type="number" id="fuel-input" value="0" min="0" max="100" step="0.1">
         </div>
-        <div class="setting-group">
+
+        <!-- Amazon: diesel price dropdown -->
+        <div class="setting-group" id="setting-diesel" style="display:none">
+          <label for="diesel-select">경유가격 ($/gal) <span class="tip"
+              data-tip="미국 주간 평균 경유가격. DOE/EIA 기준으로 연료할증률 자동 산정됩니다.">ⓘ</span></label>
+          <select id="diesel-select">
+            <option value="2.90">$2.90 (14.50%)</option>
+            <option value="3.02">$3.02 (14.75%)</option>
+            <option value="3.14">$3.14 (15.00%)</option>
+            <option value="3.26">$3.26 (15.25%)</option>
+            <option value="3.38">$3.38 (15.50%)</option>
+            <option value="3.50" selected>$3.50 (15.75%)</option>
+            <option value="3.62">$3.62 (16.00%)</option>
+            <option value="3.74">$3.74 (16.25%)</option>
+            <option value="3.86">$3.86 (16.50%)</option>
+            <option value="3.98">$3.98 (16.75%)</option>
+            <option value="4.10">$4.10 (17.00%)</option>
+            <option value="4.22">$4.22 (17.25%)</option>
+            <option value="4.34">$4.34 (17.50%)</option>
+            <option value="4.46">$4.46 (17.75%)</option>
+            <option value="4.58">$4.58 (18.00%)</option>
+          </select>
+        </div>
+
+        <!-- FedEx: delivery type -->
+        <div class="setting-group" id="setting-delivery-type">
           <label for="delivery-type">배송지 유형 <span class="tip"
               data-tip="Commercial=사업장(별도 할증 없음), Residential=주거지(개당 $5.95 추가)">ⓘ</span></label>
           <select id="delivery-type">
@@ -64,7 +107,9 @@
             <option value="residential">Residential</option>
           </select>
         </div>
-        <div class="setting-group">
+
+        <!-- FedEx: DAS 7 tiers -->
+        <div class="setting-group" id="setting-das-fedex">
           <label for="das-tier">DAS 티어 <span class="tip"
               data-tip="배송지역 할증(Delivery Area Surcharge). 도착지 ZIP코드에 따라 추가 요금 부과. 대부분 None">ⓘ</span></label>
           <select id="das-tier">
@@ -77,6 +122,19 @@
             <option value="Intra-Hawaii">Intra-Hawaii</option>
           </select>
         </div>
+
+        <!-- Amazon: DAS 3 tiers -->
+        <div class="setting-group" id="setting-das-amazon" style="display:none">
+          <label for="das-tier-amazon">DAS 티어 <span class="tip"
+              data-tip="배송지역 할증. Amazon은 미 본토 48주만 지원. Delivery Area $4.45, Extended $5.55, Remote $16.75">ⓘ</span></label>
+          <select id="das-tier-amazon">
+            <option value="None">None</option>
+            <option value="Delivery Area">Delivery Area ($4.45)</option>
+            <option value="Extended Delivery Area">Extended ($5.55)</option>
+            <option value="Remote Area">Remote ($16.75)</option>
+          </select>
+        </div>
+
         <div class="setting-group">
           <label>치수 단위</label>
           <div class="unit-toggle" id="unit-dim">
@@ -144,10 +202,10 @@
               <th>기본운임</th>
               <th>연료할증</th>
               <th>운임소계</th>
-              <th><span class="tip" data-tip="추가핸들링(AHS-Dim/Wgt), 대형(Oversize), 초과(Unauth) 등 추가 수수료 종류">SC종류</span></th>
+              <th><span class="tip" data-tip="추가 수수료 종류 (FedEx: AHS/Oversize/Unauth, Amazon: NonStd/AHS/LargePkg/ExtraHeavy)">SC종류</span></th>
               <th><span class="tip" data-tip="해당 SC가 부과된 구체적 사유 (예: 최장변 초과, 실중량 초과)">SC근거</span></th>
               <th>SC금액</th>
-              <th><span class="tip" data-tip="주거지 배송 할증 ($5.95/개). Commercial이면 $0">Resi.</span></th>
+              <th><span class="tip" data-tip="주거지 배송 할증. FedEx: $5.95/개, Amazon: 없음">Resi.</span></th>
               <th><span class="tip" data-tip="배송지역 할증. 선택한 DAS 티어에 따른 추가 요금">DAS</span></th>
               <th>수량</th>
               <th>총배송비</th>
@@ -191,7 +249,7 @@
 
     <!-- ═══ Footer ═══ -->
     <footer class="footer">
-      <p>⚠️ 참고용 계산기입니다. 실제 FedEx 청구액과 다를 수 있습니다.</p>
+      <p>⚠️ 참고용 계산기입니다. 실제 청구액과 다를 수 있습니다.</p>
       <p id="meta-info"></p>
       <p>© 2025 MUSICUS</p>
     </footer>
@@ -208,6 +266,7 @@
 
   <!-- ═══ Scripts ═══ -->
   <script src="js/calculator.js"></script>
+  <script src="js/amazon-calculator.js"></script>
   <script src="js/data-loader.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/ui.js"></script>

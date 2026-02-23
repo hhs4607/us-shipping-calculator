@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   FedEx Ground 2025 Shipping Calculator — V2 Minimal B&W
+   MUSICUS US Shipping Calculator — V4 Multi-Carrier (FedEx + Amazon)
    ═══════════════════════════════════════════════════════════════════ */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -387,6 +387,69 @@ body {
   border-color: #c44;
 }
 
+/* Amazon SC Tags */
+.sc-tag--nonstd {
+  color: #9bd;
+  border-color: #579;
+}
+
+.sc-tag--largepkg {
+  color: #f99;
+  border-color: #c66;
+}
+
+.sc-tag--extraheavy {
+  color: #f77;
+  border-color: #c44;
+}
+
+/* ─── Carrier Toggle ─────────────────────────────────────────────── */
+.carrier-card {
+  padding: 0.75rem 1.25rem;
+}
+
+.carrier-toggle {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.carrier-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.6rem 1rem;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-m);
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.carrier-btn:hover {
+  border-color: var(--border-l);
+  color: var(--text-s);
+}
+
+.carrier-btn.active {
+  border-color: var(--text);
+  color: var(--text);
+  background: var(--surface2);
+}
+
+.carrier-btn .carrier-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.carrier-btn .carrier-year {
+  font-size: 0.65rem;
+  opacity: 0.6;
+}
+
 /* ─── Summary Panel ───────────────────────────────────────────────── */
 .summary-grid {
   display: grid;
@@ -730,6 +793,20 @@ body {
 .btn-help:hover {
   background: var(--border-l) !important;
   color: #fff !important;
+}
+
+.btn-benchmark {
+  background: var(--surface3) !important;
+  border: 1px solid #4a7 !important;
+  color: #8c8 !important;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-benchmark:hover {
+  background: #1a3a2a !important;
+  color: #afa !important;
 }
 
 /* ─── Tooltip (ⓘ) ───────────────────────────────────────────────── */

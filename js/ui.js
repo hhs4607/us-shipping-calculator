@@ -1,35 +1,52 @@
 /**
- * UI Controller V2 — DOM manipulation, event handling, real-time calculation.
- * V2: Residential, DAS settings + AHS highest-amount logic
+ * UI Controller V4 — Multi-carrier support (FedEx Ground + Amazon Shipping)
+ * V4: Carrier toggle, Amazon diesel fuel lookup, Amazon surcharge tiers
  */
 
 const UI = (() => {
   let data = null;       // { rates, surcharges, defaults, zones, meta }
-  let state = null;      // { zone, fuelPct, deliveryType, dasTier, unitDim, unitWeight, items }
+  let state = null;      // { carrier, zone, fuelPct, dieselPrice, deliveryType, dasTier, dasTierAmazon, unitDim, unitWeight, items }
   let itemIdCounter = 0;
+
+  // ─── Carrier Helpers ───────────────────────────────────────────
+
+  function isAmazon() {
+    return state && state.carrier === 'amazon-shipping';
+  }
+
+  function isFedEx() {
+    return !state || state.carrier === 'fedex-ground';
+  }
 
   // ─── Initialization ─────────────────────────────────────────────
 
   async function init() {
+    // Try URL state first to determine carrier
+    const urlState = Storage.loadFromURL();
+    const carrier = (urlState && urlState.carrier) || 'fedex-ground';
+
     try {
-      data = await DataLoader.loadAll();
+      data = await DataLoader.loadAll(carrier);
     } catch (e) {
       console.error('Data load failed:', e);
       showToast('데이터 로드 실패: ' + e.message, 'error');
       return;
     }
 
-    const urlState = Storage.loadFromURL();
     if (urlState) {
-      // Ensure V2 fields exist
       state = urlState;
+      if (!state.carrier) state.carrier = 'fedex-ground';
       if (!state.deliveryType) state.deliveryType = 'commercial';
       if (!state.dasTier) state.dasTier = 'None';
+      if (!state.dasTierAmazon) state.dasTierAmazon = 'None';
+      if (state.dieselPrice == null) state.dieselPrice = 3.50;
       itemIdCounter = state.items.length;
     } else {
       resetToDefaults();
     }
 
+    renderCarrierToggle();
+    updateCarrierUI();
     renderSettings();
     renderItemsTable();
     recalculate();
@@ -39,11 +56,15 @@ const UI = (() => {
 
   function resetToDefaults() {
     const defaults = data.defaults;
+    const carrier = (state && state.carrier) || 'fedex-ground';
     state = {
+      carrier,
       zone: defaults.zone || 2,
       fuelPct: defaults.fuel_pct || 0,
+      dieselPrice: defaults.diesel_price || 3.50,
       deliveryType: 'commercial',
       dasTier: 'None',
+      dasTierAmazon: 'None',
       unitDim: 'mm',
       unitWeight: 'kg',
       items: defaults.items.map((item, i) => ({
@@ -97,13 +118,70 @@ const UI = (() => {
     return JSON.parse(JSON.stringify(state));
   }
 
+  // ─── Carrier Toggle ────────────────────────────────────────────
+
+  function renderCarrierToggle() {
+    document.querySelectorAll('.carrier-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.carrier === state.carrier);
+    });
+  }
+
+  async function switchCarrier(newCarrier) {
+    if (newCarrier === state.carrier) return;
+
+    try {
+      data = await DataLoader.loadAll(newCarrier);
+    } catch (e) {
+      showToast('데이터 로드 실패: ' + e.message, 'error');
+      return;
+    }
+
+    state.carrier = newCarrier;
+    renderCarrierToggle();
+    updateCarrierUI();
+    updateHeaderTitle();
+    resetToDefaults();
+    renderSettings();
+    renderItemsTable();
+    recalculate();
+    renderMeta();
+    updateURL();
+    showToast(newCarrier === 'amazon-shipping' ? 'Amazon Shipping으로 전환' : 'FedEx Ground로 전환', 'success');
+  }
+
+  function updateHeaderTitle() {
+    const titleEl = document.getElementById('header-title');
+    if (isAmazon()) {
+      titleEl.textContent = 'Amazon Shipping 2026 배송비 계산기';
+    } else {
+      titleEl.textContent = 'FedEx Ground 2025 배송비 계산기';
+    }
+  }
+
+  function updateCarrierUI() {
+    const amazon = isAmazon();
+
+    // FedEx-only controls
+    document.getElementById('setting-fuel-pct').style.display = amazon ? 'none' : '';
+    document.getElementById('setting-delivery-type').style.display = amazon ? 'none' : '';
+    document.getElementById('setting-das-fedex').style.display = amazon ? 'none' : '';
+
+    // Amazon-only controls
+    document.getElementById('setting-diesel').style.display = amazon ? '' : 'none';
+    document.getElementById('setting-das-amazon').style.display = amazon ? '' : 'none';
+
+    updateHeaderTitle();
+  }
+
   // ─── Settings ───────────────────────────────────────────────────
 
   function renderSettings() {
     document.getElementById('zone-select').value = state.zone;
     document.getElementById('fuel-input').value = state.fuelPct;
+    document.getElementById('diesel-select').value = state.dieselPrice;
     document.getElementById('delivery-type').value = state.deliveryType;
     document.getElementById('das-tier').value = state.dasTier;
+    document.getElementById('das-tier-amazon').value = state.dasTierAmazon;
     updateUnitToggle('dim', state.unitDim);
     updateUnitToggle('weight', state.unitWeight);
   }
@@ -210,7 +288,6 @@ const UI = (() => {
   // ─── Calculation ────────────────────────────────────────────────
 
   function recalculate() {
-    const isResidential = state.deliveryType === 'residential';
     const calcItems = state.items.map(item => ({
       name: item.name,
       L_cm: item.L_mm / 10,
@@ -220,15 +297,28 @@ const UI = (() => {
       qty: item.qty,
     }));
 
-    const result = calcAll(
-      calcItems,
-      state.zone,
-      state.fuelPct,
-      isResidential,
-      state.dasTier,
-      data.rates,
-      data.surcharges
-    );
+    let result;
+    if (isAmazon()) {
+      result = amazonCalcAll(
+        calcItems,
+        state.zone,
+        state.dieselPrice,
+        state.dasTierAmazon,
+        data.rates,
+        data.surcharges
+      );
+    } else {
+      const isResidential = state.deliveryType === 'residential';
+      result = calcAll(
+        calcItems,
+        state.zone,
+        state.fuelPct,
+        isResidential,
+        state.dasTier,
+        data.rates,
+        data.surcharges
+      );
+    }
 
     renderResults(result);
     renderSummary(result);
@@ -240,8 +330,6 @@ const UI = (() => {
     const tbody = document.getElementById('results-tbody');
     tbody.innerHTML = '';
 
-    const isResidential = state.deliveryType === 'residential';
-
     state.items.forEach((item, idx) => {
       const calcItem = {
         name: item.name,
@@ -252,9 +340,15 @@ const UI = (() => {
         qty: item.qty,
       };
 
-      const line = item.qty > 0
-        ? calcLineItem(calcItem, state.zone, state.fuelPct, isResidential, state.dasTier, data.rates, data.surcharges)
-        : null;
+      let line = null;
+      if (item.qty > 0) {
+        if (isAmazon()) {
+          line = amazonCalcLineItem(calcItem, state.zone, state.dieselPrice, state.dasTierAmazon, data.rates, data.surcharges);
+        } else {
+          const isResidential = state.deliveryType === 'residential';
+          line = calcLineItem(calcItem, state.zone, state.fuelPct, isResidential, state.dasTier, data.rates, data.surcharges);
+        }
+      }
 
       const tr = document.createElement('tr');
       if (item.qty === 0) tr.style.opacity = '0.35';
@@ -318,6 +412,11 @@ const UI = (() => {
   // ─── Events ─────────────────────────────────────────────────────
 
   function bindEvents() {
+    // Carrier toggle
+    document.querySelectorAll('.carrier-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchCarrier(btn.dataset.carrier));
+    });
+
     // Zone
     document.getElementById('zone-select').addEventListener('change', (e) => {
       state.zone = Number(e.target.value);
@@ -325,23 +424,37 @@ const UI = (() => {
       updateURL();
     });
 
-    // Fuel
+    // Fuel (FedEx)
     document.getElementById('fuel-input').addEventListener('input', (e) => {
       state.fuelPct = Number(e.target.value) || 0;
       recalculate();
       updateURL();
     });
 
-    // Delivery Type (V2)
+    // Diesel price (Amazon)
+    document.getElementById('diesel-select').addEventListener('change', (e) => {
+      state.dieselPrice = Number(e.target.value);
+      recalculate();
+      updateURL();
+    });
+
+    // Delivery Type (FedEx)
     document.getElementById('delivery-type').addEventListener('change', (e) => {
       state.deliveryType = e.target.value;
       recalculate();
       updateURL();
     });
 
-    // DAS Tier (V2)
+    // DAS Tier (FedEx)
     document.getElementById('das-tier').addEventListener('change', (e) => {
       state.dasTier = e.target.value;
+      recalculate();
+      updateURL();
+    });
+
+    // DAS Tier (Amazon)
+    document.getElementById('das-tier-amazon').addEventListener('change', (e) => {
+      state.dasTierAmazon = e.target.value;
       recalculate();
       updateURL();
     });
@@ -408,13 +521,24 @@ const UI = (() => {
       input.onchange = async (e) => {
         try {
           const importedState = await Storage.importJSON(e.target.files[0]);
+          // Load carrier data if different
+          const importCarrier = importedState.carrier || 'fedex-ground';
+          if (importCarrier !== state.carrier) {
+            data = await DataLoader.loadAll(importCarrier);
+          }
           state = importedState;
+          if (!state.carrier) state.carrier = 'fedex-ground';
           if (!state.deliveryType) state.deliveryType = 'commercial';
           if (!state.dasTier) state.dasTier = 'None';
+          if (!state.dasTierAmazon) state.dasTierAmazon = 'None';
+          if (state.dieselPrice == null) state.dieselPrice = 3.50;
           itemIdCounter = state.items.length;
+          renderCarrierToggle();
+          updateCarrierUI();
           renderSettings();
           renderItemsTable();
           recalculate();
+          renderMeta();
           updateURL();
           showToast('JSON 파일 가져오기 완료', 'success');
         } catch (err) {
@@ -482,10 +606,11 @@ const UI = (() => {
       listHtml = '<div class="scenario-list">';
       scenarios.forEach(s => {
         const date = new Date(s.savedAt).toLocaleDateString('ko-KR');
+        const carrierLabel = s.state && s.state.carrier === 'amazon-shipping' ? ' [Amazon]' : ' [FedEx]';
         listHtml += `
           <div class="scenario-item" onclick="UI.doLoad('${escHtml(s.name)}')">
             <div>
-              <div class="name">${escHtml(s.name)}</div>
+              <div class="name">${escHtml(s.name)}${carrierLabel}</div>
               <div class="date">${date}</div>
             </div>
             <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); UI.doDelete('${escHtml(s.name)}')">삭제</button>
@@ -505,16 +630,34 @@ const UI = (() => {
     overlay.classList.add('active');
   }
 
-  function doLoad(name) {
+  async function doLoad(name) {
     const loaded = Storage.loadScenario(name);
     if (!loaded) { showToast('시나리오를 찾을 수 없습니다', 'error'); return; }
+
+    // Load carrier data if different
+    const loadCarrier = loaded.carrier || 'fedex-ground';
+    if (loadCarrier !== state.carrier) {
+      try {
+        data = await DataLoader.loadAll(loadCarrier);
+      } catch (e) {
+        showToast('데이터 로드 실패: ' + e.message, 'error');
+        return;
+      }
+    }
+
     state = loaded;
+    if (!state.carrier) state.carrier = 'fedex-ground';
     if (!state.deliveryType) state.deliveryType = 'commercial';
     if (!state.dasTier) state.dasTier = 'None';
+    if (!state.dasTierAmazon) state.dasTierAmazon = 'None';
+    if (state.dieselPrice == null) state.dieselPrice = 3.50;
     itemIdCounter = state.items.length;
+    renderCarrierToggle();
+    updateCarrierUI();
     renderSettings();
     renderItemsTable();
     recalculate();
+    renderMeta();
     updateURL();
     closeModal();
     showToast(`"${name}" 불러오기 완료`, 'success');
@@ -535,6 +678,32 @@ const UI = (() => {
   function showGlossaryModal() {
     const overlay = document.getElementById('modal-overlay');
     const modal = document.getElementById('modal-content');
+
+    const amazonSection = `
+    <div class="help-section">
+      <h4>📦 Amazon Shipping 추가 수수료</h4>
+      <div class="term-row">
+        <div class="term-name">NonStandard<br>(비표준)</div>
+        <div class="term-desc">다음 중 하나에 해당하면 부과:<br>• <strong>최장변 > 37"</strong><br>• <strong>둘째변 > 30"</strong><br>• <strong>셋째변 > 24"</strong><br>Zone그룹별 $11~$14.15</div>
+      </div>
+      <div class="term-row">
+        <div class="term-name">AHS-Dim<br>(치수 추가핸들링)</div>
+        <div class="term-desc">• <strong>최장변 > 47"</strong><br>• <strong>둘째변 > 42"</strong><br>• <strong>Girth > 105"</strong><br>Zone그룹별 $29.26~$37.57</div>
+      </div>
+      <div class="term-row">
+        <div class="term-name">AHS-Wgt<br>(중량 추가핸들링)</div>
+        <div class="term-desc"><strong>실중량 > 50lb</strong> 시 부과.<br>Zone그룹별 $45.89~$55.20</div>
+      </div>
+      <div class="term-row">
+        <div class="term-name">LargePkg<br>(대형)</div>
+        <div class="term-desc"><strong>Girth > 130"</strong> 또는 <strong>최장변 > 96"</strong><br>Zone그룹별 $255~$320. 최소 청구중량 90lb.</div>
+      </div>
+      <div class="term-row">
+        <div class="term-name">ExtraHeavy<br>(초중량)</div>
+        <div class="term-desc">• <strong>실중량 > 150lb</strong><br>• <strong>Girth > 165"</strong><br>• <strong>최장변 > 108"</strong><br>정액 <strong>$1,875</strong></div>
+      </div>
+    </div>`;
+
     modal.innerHTML = `
   <div class="help-modal">
     <h3>📖 배송 용어 사전</h3>
@@ -547,11 +716,11 @@ const UI = (() => {
       </div>
       <div class="term-row">
         <div class="term-name">Billable Weight<br>(청구중량)</div>
-        <div class="term-desc"><strong>실중량과 부피중량 중 큰 값</strong>이 청구중량이 됩니다. FedEx는 이 중량을 기준으로 운임을 산정합니다.</div>
+        <div class="term-desc"><strong>실중량과 부피중량 중 큰 값</strong>이 청구중량이 됩니다. 이 중량을 기준으로 운임을 산정합니다.</div>
       </div>
       <div class="term-row">
-        <div class="term-name">L + Girth<br>(길이 + 둘레)</div>
-        <div class="term-desc"><strong>최장변 + 2 × (높이 + 너비)</strong><br>택배 크기를 판정하는 기준입니다. 이 값이 105"를 넘으면 AHS, 130"를 넘으면 Oversize, 165"를 넘으면 Unauthorized에 해당합니다.</div>
+        <div class="term-name">Girth<br>(둘레)</div>
+        <div class="term-desc"><strong>최장변 + 2 × (높이 + 너비)</strong><br>택배 크기를 판정하는 기준입니다. FedEx와 Amazon 모두 같은 공식 사용.</div>
       </div>
     </div>
 
@@ -559,48 +728,46 @@ const UI = (() => {
       <h4>💰 운임 · 할증</h4>
       <div class="term-row">
         <div class="term-name">Zone<br>(배송 구간)</div>
-        <div class="term-desc">출발지에서 도착지까지의 <strong>거리에 따른 구간(2~8)</strong>입니다. Zone 2가 가장 가깝고(~150mi), Zone 8이 가장 멉니다(1,801mi+). 거리가 멀수록 운임이 높아집니다.</div>
+        <div class="term-desc">출발지에서 도착지까지의 <strong>거리에 따른 구간(2~8)</strong>입니다.</div>
       </div>
       <div class="term-row">
         <div class="term-name">Fuel Surcharge<br>(연료할증)</div>
-        <div class="term-desc">기본운임에 추가되는 <strong>유류비 비율(%)</strong>입니다. FedEx가 주기적으로 공지하며, 보통 10~15% 범위입니다.</div>
+        <div class="term-desc"><strong>FedEx:</strong> 기본운임 × 사용자 입력 %<br><strong>Amazon:</strong> 주간 경유가격 기준 자동 산정 (14.5~18%)</div>
       </div>
       <div class="term-row">
         <div class="term-name">Residential<br>(주거지 할증)</div>
-        <div class="term-desc">배송지가 주거지(집, 아파트 등)인 경우 <strong>개당 $5.95</strong>가 추가됩니다. Commercial(사업장)이면 부과되지 않습니다.</div>
+        <div class="term-desc"><strong>FedEx:</strong> 주거지 배송 시 개당 $5.95 추가<br><strong>Amazon:</strong> 없음</div>
       </div>
       <div class="term-row">
         <div class="term-name">DAS<br>(배송지역 할증)</div>
-        <div class="term-desc">Delivery Area Surcharge의 약자입니다. <strong>도착지 ZIP코드에 따라</strong> 추가 요금이 부과됩니다.<br>Base($4.20~$6.20), Extended($5.25~$8.30), Remote($15.50), Alaska($43), Hawaii($14.50)</div>
+        <div class="term-desc"><strong>FedEx:</strong> 7단계 (Base~Intra-Hawaii)<br><strong>Amazon:</strong> 3단계 (Delivery Area $4.45, Extended $5.55, Remote $16.75). 미 본토 48주만.</div>
       </div>
     </div>
 
     <div class="help-section">
-      <h4>⚠️ 추가 수수료 (Surcharge)</h4>
+      <h4>⚠️ FedEx Ground 추가 수수료</h4>
       <div class="term-row">
-        <div class="term-name">AHS-Dim<br>(치수 추가핸들링)</div>
-        <div class="term-desc">다음 중 하나에 해당하면 부과됩니다:<br>• <strong>최장변 > 48"</strong> (약 122cm)<br>• <strong>둘째변 > 30"</strong> (약 76cm)<br>• <strong>L+Girth > 105"</strong><br>Zone별 $28~$38. 최소 청구중량 40lb 적용.</div>
+        <div class="term-name">AHS-Dim</div>
+        <div class="term-desc">최장변 > 48" / 둘째변 > 30" / L+Girth > 105"<br>Zone별 $28~$38. 최소 청구중량 40lb.</div>
       </div>
       <div class="term-row">
-        <div class="term-name">AHS-Wgt<br>(중량 추가핸들링)</div>
-        <div class="term-desc"><strong>실중량 > 50lb</strong>(약 22.7kg)인 경우 부과됩니다.<br>Zone별 $43.50~$55.<br>AHS-Dim과 동시 해당 시, <strong>금액이 높은 쪽 1개만</strong> 적용됩니다.</div>
+        <div class="term-name">AHS-Wgt</div>
+        <div class="term-desc">실중량 > 50lb. Zone별 $43.50~$55.</div>
       </div>
       <div class="term-row">
-        <div class="term-name">AHS-Pkg<br>(포장 추가핸들링)</div>
-        <div class="term-desc"><strong>비표준 포장</strong>(금속, 목재, 원통형, 수축포장 등)에 부과됩니다.<br>Zone별 $25~$31.50.</div>
+        <div class="term-name">Oversize</div>
+        <div class="term-desc">최장변 > 96" / L+Girth > 130". Zone별 $240~$305. 최소 청구중량 90lb.</div>
       </div>
       <div class="term-row">
-        <div class="term-name">Oversize<br>(대형)</div>
-        <div class="term-desc"><strong>최장변 > 96"</strong> 또는 <strong>L+Girth > 130"</strong>인 경우 부과됩니다.<br>Zone별 $240~$305. 최소 청구중량 90lb 적용.</div>
-      </div>
-      <div class="term-row">
-        <div class="term-name">Unauthorized<br>(초과/비허가)</div>
-        <div class="term-desc">다음 중 하나에 해당하면 부과됩니다:<br>• <strong>최장변 > 108"</strong><br>• <strong>L+Girth > 165"</strong><br>• <strong>실중량 > 150lb</strong> (약 68kg)<br>정액 <strong>$1,775</strong>. FedEx가 거부하거나 반송할 수 있습니다.</div>
+        <div class="term-name">Unauthorized</div>
+        <div class="term-desc">최장변 > 108" / L+Girth > 165" / 실중량 > 150lb. 정액 $1,775.</div>
       </div>
     </div>
 
+    ${amazonSection}
+
     <div class="tip-box">
-      <strong>💡 참고:</strong> 추가 수수료는 품목당 1종류만 적용되며, 우선순위는 Unauthorized > Oversize > AHS 순입니다. 모든 금액은 FedEx Ground 2025 기준이며, 연료할증은 별도입니다.
+      <strong>💡 참고:</strong> 추가 수수료는 품목당 1종류만 적용됩니다. 우선순위가 높은 것만 부과됩니다.
     </div>
 
     <div class="close-row">
@@ -621,32 +788,32 @@ const UI = (() => {
     <div class="step-row">
       <span class="step-num">1</span>
       <div class="step-content">
-        <div class="step-title">Zone 선택</div>
-        <div class="step-detail">출발지에서 도착지까지 거리에 맞는 Zone(2~8)을 선택합니다. FedEx 웹사이트에서 ZIP코드로 조회할 수 있습니다.</div>
+        <div class="step-title">배송사 선택</div>
+        <div class="step-detail">FedEx Ground 또는 Amazon Shipping 중 하나를 선택합니다. 요금 테이블과 추가 수수료 규칙이 다릅니다.</div>
       </div>
     </div>
 
     <div class="step-row">
       <span class="step-num">2</span>
       <div class="step-content">
-        <div class="step-title">연료할증(%) 입력</div>
-        <div class="step-detail">FedEx 공지 기준으로 현재 연료할증률을 입력합니다. 보통 10~15% 범위이며, 0으로 두면 연료할증 없이 계산됩니다.</div>
+        <div class="step-title">Zone 선택</div>
+        <div class="step-detail">출발지에서 도착지까지 거리에 맞는 Zone(2~8)을 선택합니다.</div>
       </div>
     </div>
 
     <div class="step-row">
       <span class="step-num">3</span>
       <div class="step-content">
-        <div class="step-title">배송지 유형 선택</div>
-        <div class="step-detail"><strong>Commercial</strong> = 사업장 (별도 할증 없음)<br><strong>Residential</strong> = 주거지, 아파트, 자택사업장 (개당 $5.95 추가)</div>
+        <div class="step-title">연료할증 설정</div>
+        <div class="step-detail"><strong>FedEx:</strong> 연료할증률(%)을 직접 입력합니다.<br><strong>Amazon:</strong> 경유가격($/갤런)을 선택하면 자동으로 연료할증률이 산정됩니다.</div>
       </div>
     </div>
 
     <div class="step-row">
       <span class="step-num">4</span>
       <div class="step-content">
-        <div class="step-title">DAS 티어 선택</div>
-        <div class="step-detail">배송지역 할증이 적용되는 지역이면 해당 티어를 선택합니다. 일반 지역은 <strong>None</strong>으로 두면 됩니다.</div>
+        <div class="step-title">추가 설정</div>
+        <div class="step-detail"><strong>FedEx:</strong> 배송지 유형(Commercial/Residential), DAS 티어<br><strong>Amazon:</strong> DAS 티어 (미 본토 48주만 지원)</div>
       </div>
     </div>
 
@@ -654,7 +821,7 @@ const UI = (() => {
       <span class="step-num">5</span>
       <div class="step-content">
         <div class="step-title">품목 입력</div>
-        <div class="step-detail">제품명, 가로/세로/높이(mm 또는 inch), 중량(kg 또는 lb), 수량을 입력합니다. 여러 품목은 ➕ 행 추가 버튼으로 추가하세요.</div>
+        <div class="step-detail">제품명, 가로/세로/높이, 중량, 수량을 입력합니다. 여러 품목은 ➕ 행 추가 버튼으로 추가하세요.</div>
       </div>
     </div>
 
@@ -662,14 +829,13 @@ const UI = (() => {
       <span class="step-num">6</span>
       <div class="step-content">
         <div class="step-title">결과 확인</div>
-        <div class="step-detail">아래 결과 테이블에서 품목별 상세 비용(기본운임, 연료할증, SC, Residential, DAS)과 총 배송비를 확인합니다.</div>
+        <div class="step-detail">아래 결과 테이블에서 품목별 상세 비용과 총 배송비를 확인합니다.</div>
       </div>
     </div>
 
     <div class="tip-box">
       <strong>💡 팁:</strong><br>
-      • <strong>150lb 초과</strong> 시 rate150 × (청구중량/150) 비례 계산이 적용됩니다.<br>
-      • <strong>SC는 품목당 1종류만</strong> 적용됩니다 (Unauthorized > Oversize > AHS 우선순위).<br>
+      • <strong>배송사를 전환</strong>하면 동일 제품에 대한 FedEx/Amazon 요금을 비교할 수 있습니다.<br>
       • <strong>💾 저장</strong>으로 시나리오를 로컬에 저장하고, <strong>🔗 공유</strong>로 URL을 복사할 수 있습니다.<br>
       • <strong>⬇ Export</strong>로 JSON 파일을 내보내고, <strong>⬆ Import</strong>로 불러올 수 있습니다.<br>
       • 각 설정과 결과 컬럼의 <strong>ⓘ</strong> 아이콘에 마우스를 올리면 용어 설명을 볼 수 있습니다.
@@ -711,10 +877,15 @@ const UI = (() => {
   function scTypeToClass(type) {
     const map = {
       'OK': 'sc-tag--ok',
+      // FedEx types
       'AHS-Dim': 'sc-tag--ahs-dim',
       'AHS-Wgt': 'sc-tag--ahs-wgt',
       'Oversize': 'sc-tag--oversize',
       'Unauth': 'sc-tag--unauth',
+      // Amazon types
+      'NonStd': 'sc-tag--nonstd',
+      'LargePkg': 'sc-tag--largepkg',
+      'ExtraHeavy': 'sc-tag--extraheavy',
     };
     return map[type] || '';
   }

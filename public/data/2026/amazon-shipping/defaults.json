@@ -1,0 +1,209 @@
+{
+  "zone": 2,
+  "diesel_price": 3.50,
+  "sets": {
+    "L": [
+      {
+        "name": "frame (L)",
+        "dimensions_mm": "1190*295*190",
+        "weight_kg": 57.0,
+        "qty": 1
+      },
+      {
+        "name": "wood (L)",
+        "dimensions_mm": "1200*1200*90",
+        "weight_kg": 30.0,
+        "qty": 4
+      },
+      {
+        "name": "pillarpipe (L)",
+        "dimensions_mm": "985*120*60",
+        "weight_kg": 12.0,
+        "qty": 1
+      },
+      {
+        "name": "pipe joint (L)",
+        "dimensions_mm": "500*250*150",
+        "weight_kg": 7.0,
+        "qty": 1
+      },
+      {
+        "name": "Fabric (L)",
+        "dimensions_mm": "1290*540*140",
+        "weight_kg": 30.0,
+        "qty": 4
+      }
+    ],
+    "M": [
+      {
+        "name": "frame (M)",
+        "dimensions_mm": "920*295*190",
+        "weight_kg": 31.0,
+        "qty": 1
+      },
+      {
+        "name": "wood (M)",
+        "dimensions_mm": "920*920*90",
+        "weight_kg": 17.2,
+        "qty": 4
+      },
+      {
+        "name": "pillarpipe (M)",
+        "dimensions_mm": "985*120*60",
+        "weight_kg": 12.0,
+        "qty": 1
+      },
+      {
+        "name": "pipe joint (M)",
+        "dimensions_mm": "500*250*150",
+        "weight_kg": 7.0,
+        "qty": 1
+      },
+      {
+        "name": "Fabric (M)",
+        "dimensions_mm": "1290*540*140",
+        "weight_kg": 30.0,
+        "qty": 3
+      }
+    ],
+    "S": [
+      {
+        "name": "frame (S)",
+        "dimensions_mm": "1176*160*145",
+        "weight_kg": 16.0,
+        "qty": 1
+      },
+      {
+        "name": "wood (S)",
+        "dimensions_mm": "1240*1240*90",
+        "weight_kg": 31.0,
+        "qty": 1
+      },
+      {
+        "name": "pillarpipe (S)",
+        "dimensions_mm": "985*120*60",
+        "weight_kg": 12.0,
+        "qty": 1
+      },
+      {
+        "name": "pipe joint (S)",
+        "dimensions_mm": "500*250*150",
+        "weight_kg": 7.0,
+        "qty": 1
+      },
+      {
+        "name": "Fabric (S)",
+        "dimensions_mm": "1290*540*140",
+        "weight_kg": 30.0,
+        "qty": 2
+      }
+    ]
+  },
+  "items": [
+    {
+      "id": 1,
+      "name": "frame (L)",
+      "dimensions_mm": "1190*295*190",
+      "weight_kg": 57.0,
+      "qty": 1
+    },
+    {
+      "id": 2,
+      "name": "wood (L)",
+      "dimensions_mm": "1200*1200*90",
+      "weight_kg": 30.0,
+      "qty": 4
+    },
+    {
+      "id": 3,
+      "name": "pillarpipe (L)",
+      "dimensions_mm": "985*120*60",
+      "weight_kg": 12.0,
+      "qty": 1
+    },
+    {
+      "id": 4,
+      "name": "pipe joint (L)",
+      "dimensions_mm": "500*250*150",
+      "weight_kg": 7.0,
+      "qty": 1
+    },
+    {
+      "id": 5,
+      "name": "Fabric (L)",
+      "dimensions_mm": "1290*540*140",
+      "weight_kg": 30.0,
+      "qty": 4
+    },
+    {
+      "id": 6,
+      "name": "frame (M)",
+      "dimensions_mm": "920*295*190",
+      "weight_kg": 31.0,
+      "qty": 1
+    },
+    {
+      "id": 7,
+      "name": "wood (M)",
+      "dimensions_mm": "920*920*90",
+      "weight_kg": 17.2,
+      "qty": 4
+    },
+    {
+      "id": 8,
+      "name": "pillarpipe (M)",
+      "dimensions_mm": "985*120*60",
+      "weight_kg": 12.0,
+      "qty": 1
+    },
+    {
+      "id": 9,
+      "name": "pipe joint (M)",
+      "dimensions_mm": "500*250*150",
+      "weight_kg": 7.0,
+      "qty": 1
+    },
+    {
+      "id": 10,
+      "name": "Fabric (M)",
+      "dimensions_mm": "1290*540*140",
+      "weight_kg": 30.0,
+      "qty": 3
+    },
+    {
+      "id": 11,
+      "name": "frame (S)",
+      "dimensions_mm": "1176*160*145",
+      "weight_kg": 16.0,
+      "qty": 1
+    },
+    {
+      "id": 12,
+      "name": "wood (S)",
+      "dimensions_mm": "1240*1240*90",
+      "weight_kg": 31.0,
+      "qty": 1
+    },
+    {
+      "id": 13,
+      "name": "pillarpipe (S)",
+      "dimensions_mm": "985*120*60",
+      "weight_kg": 12.0,
+      "qty": 1
+    },
+    {
+      "id": 14,
+      "name": "pipe joint (S)",
+      "dimensions_mm": "500*250*150",
+      "weight_kg": 7.0,
+      "qty": 1
+    },
+    {
+      "id": 15,
+      "name": "Fabric (S)",
+      "dimensions_mm": "1290*540*140",
+      "weight_kg": 30.0,
+      "qty": 2
+    }
+  ]
+}

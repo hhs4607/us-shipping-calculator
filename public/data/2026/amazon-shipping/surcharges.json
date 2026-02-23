@@ -1,0 +1,127 @@
+{
+  "amounts": {
+    "2": {
+      "NonStd": 11.00,
+      "AHS-Dim": 29.26,
+      "AHS-Weight": 45.89,
+      "AHS-Pkg": 25.94,
+      "LargePkg": 255.00,
+      "ExtraHeavy": 1875.00
+    },
+    "3-4": {
+      "NonStd": 12.25,
+      "AHS-Dim": 32.59,
+      "AHS-Weight": 49.88,
+      "AHS-Pkg": 30.59,
+      "LargePkg": 275.00,
+      "ExtraHeavy": 1875.00
+    },
+    "5+": {
+      "NonStd": 14.15,
+      "AHS-Dim": 37.57,
+      "AHS-Weight": 55.20,
+      "AHS-Pkg": 32.59,
+      "LargePkg": 320.00,
+      "ExtraHeavy": 1875.00
+    }
+  },
+  "zone_group_map": {
+    "2": "2",
+    "3": "3-4",
+    "4": "3-4",
+    "5": "5+",
+    "6": "5+",
+    "7": "5+",
+    "8": "5+"
+  },
+  "das": {
+    "None": 0,
+    "Delivery Area": 4.45,
+    "Extended Delivery Area": 5.55,
+    "Remote Area": 16.75
+  },
+  "fuel_diesel_table": [
+    { "min": 2.90, "max": 3.02, "pct": 14.50 },
+    { "min": 3.02, "max": 3.14, "pct": 14.75 },
+    { "min": 3.14, "max": 3.26, "pct": 15.00 },
+    { "min": 3.26, "max": 3.38, "pct": 15.25 },
+    { "min": 3.38, "max": 3.50, "pct": 15.50 },
+    { "min": 3.50, "max": 3.62, "pct": 15.75 },
+    { "min": 3.62, "max": 3.74, "pct": 16.00 },
+    { "min": 3.74, "max": 3.86, "pct": 16.25 },
+    { "min": 3.86, "max": 3.98, "pct": 16.50 },
+    { "min": 3.98, "max": 4.10, "pct": 16.75 },
+    { "min": 4.10, "max": 4.22, "pct": 17.00 },
+    { "min": 4.22, "max": 4.34, "pct": 17.25 },
+    { "min": 4.34, "max": 4.46, "pct": 17.50 },
+    { "min": 4.46, "max": 4.58, "pct": 17.75 },
+    { "min": 4.58, "max": 4.70, "pct": 18.00 }
+  ],
+  "fuel_extension_rule": {
+    "increment_price": 0.12,
+    "increment_pct": 0.25,
+    "note": "If diesel price falls outside table range, extend in $0.12 increments with 0.25% surcharge increments"
+  },
+  "rules": {
+    "NonStd": {
+      "conditions": [
+        { "field": "longest_inch", "op": ">", "value": 37 },
+        { "field": "second_longest_inch", "op": ">", "value": 30 },
+        { "field": "third_longest_inch", "op": ">", "value": 24 }
+      ],
+      "logic": "OR",
+      "min_billable_lb": null,
+      "note": "Non-Standard package dimensions"
+    },
+    "AHS-Dim": {
+      "conditions": [
+        { "field": "longest_inch", "op": ">", "value": 47 },
+        { "field": "second_longest_inch", "op": ">", "value": 42 },
+        { "field": "girth_inch", "op": ">", "value": 105 }
+      ],
+      "logic": "OR",
+      "min_billable_lb": null
+    },
+    "AHS-Wgt": {
+      "conditions": [
+        { "field": "actual_weight_lb", "op": ">", "value": 50 }
+      ],
+      "logic": "SINGLE",
+      "min_billable_lb": null
+    },
+    "AHS-Pkg": {
+      "conditions": [
+        { "field": "non_standard_packaging", "op": "==", "value": true }
+      ],
+      "logic": "SINGLE",
+      "min_billable_lb": null,
+      "note": "Non-corrugated, metal, wood, cylindrical, wheels, shrink wrap, etc."
+    },
+    "LargePkg": {
+      "conditions": [
+        { "field": "girth_inch", "op": ">", "value": 130 },
+        { "field": "longest_inch", "op": ">", "value": 96 }
+      ],
+      "logic": "OR",
+      "min_billable_lb": 90
+    },
+    "ExtraHeavy": {
+      "conditions": [
+        { "field": "actual_weight_lb", "op": ">", "value": 150 },
+        { "field": "girth_inch", "op": ">", "value": 165 },
+        { "field": "longest_inch", "op": ">", "value": 108 }
+      ],
+      "logic": "OR",
+      "min_billable_lb": null,
+      "note": "Flat $1,875 per package"
+    },
+    "priority_order": [
+      "ExtraHeavy",
+      "LargePkg",
+      "AHS",
+      "NonStd"
+    ],
+    "ahs_priority": ["AHS-Wgt", "AHS-Dim", "AHS-Pkg"],
+    "rule": "highest_applicable_fee_only"
+  }
+}
