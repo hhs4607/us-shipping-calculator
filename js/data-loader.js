@@ -34,6 +34,14 @@ const DataLoader = (() => {
         return { rates, surcharges, defaults, zones, meta };
     }
 
+    async function loadBoth() {
+        const [fedex, amazon] = await Promise.all([
+            loadAll('fedex-ground'),
+            loadAll('amazon-shipping'),
+        ]);
+        return { fedex, amazon };
+    }
+
     function getCarriers() {
         return Object.keys(CARRIER_PATHS);
     }
@@ -42,5 +50,5 @@ const DataLoader = (() => {
         _cache = {};
     }
 
-    return { loadJSON, loadAll, getCarriers, clearCache };
+    return { loadJSON, loadAll, loadBoth, getCarriers, clearCache };
 })();

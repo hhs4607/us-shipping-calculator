@@ -1,32 +1,41 @@
 /**
- * UI Controller V4 — Multi-carrier support (FedEx Ground + Amazon Shipping)
- * V4: Carrier toggle, Amazon diesel fuel lookup, Amazon surcharge tiers
+ * UI Controller V5 — FedEx vs Amazon Comparison Mode
+ * V5: Always shows both carriers side by side. No carrier toggle.
+ * Unified DAS tiers, comparison tables, Chart.js visualizations.
  */
 
 const UI = (() => {
-  let data = null;       // { rates, surcharges, defaults, zones, meta }
-  let state = null;      // { carrier, zone, fuelPct, dieselPrice, deliveryType, dasTier, dasTierAmazon, unitDim, unitWeight, items }
+  let fedexData = null;   // { rates, surcharges, defaults, zones, meta }
+  let amazonData = null;  // { rates, surcharges, defaults, zones, meta }
+  let state = null;       // { zone, fuelPct, dieselPrice, isResidential, dasTier, unitDim, unitWeight, items }
   let itemIdCounter = 0;
+  let chartItemCompare = null;
+  let chartCostBreakdown = null;
 
-  // ─── Carrier Helpers ───────────────────────────────────────────
+  // ─── DAS Tier Mapping ────────────────────────────────────────────
+  const DAS_TO_FEDEX = {
+    'None': 'None',
+    'Delivery Area': 'Base',
+    'Extended': 'Extended',
+    'Remote': 'Remote',
+  };
 
-  function isAmazon() {
-    return state && state.carrier === 'amazon-shipping';
-  }
-
-  function isFedEx() {
-    return !state || state.carrier === 'fedex-ground';
-  }
+  const DAS_TO_AMAZON = {
+    'None': 'None',
+    'Delivery Area': 'Delivery Area',
+    'Extended': 'Extended Delivery Area',
+    'Remote': 'Remote Area',
+  };
 
   // ─── Initialization ─────────────────────────────────────────────
 
   async function init() {
-    // Try URL state first to determine carrier
     const urlState = Storage.loadFromURL();
-    const carrier = (urlState && urlState.carrier) || 'fedex-ground';
 
     try {
-      data = await DataLoader.loadAll(carrier);
+      const both = await DataLoader.loadBoth();
+      fedexData = both.fedex;
+      amazonData = both.amazon;
     } catch (e) {
       console.error('Data load failed:', e);
       showToast('데이터 로드 실패: ' + e.message, 'error');
@@ -34,19 +43,12 @@ const UI = (() => {
     }
 
     if (urlState) {
-      state = urlState;
-      if (!state.carrier) state.carrier = 'fedex-ground';
-      if (!state.deliveryType) state.deliveryType = 'commercial';
-      if (!state.dasTier) state.dasTier = 'None';
-      if (!state.dasTierAmazon) state.dasTierAmazon = 'None';
-      if (state.dieselPrice == null) state.dieselPrice = 3.50;
+      state = migrateState(urlState);
       itemIdCounter = state.items.length;
     } else {
       resetToDefaults();
     }
 
-    renderCarrierToggle();
-    updateCarrierUI();
     renderSettings();
     renderItemsTable();
     recalculate();
@@ -54,17 +56,47 @@ const UI = (() => {
     bindEvents();
   }
 
+  function migrateState(old) {
+    const s = { ...old };
+
+    // Remove V4 carrier field
+    delete s.carrier;
+
+    // Convert deliveryType → isResidential
+    if ('deliveryType' in s) {
+      s.isResidential = s.deliveryType === 'residential';
+      delete s.deliveryType;
+    }
+    if (s.isResidential == null) s.isResidential = false;
+
+    // Convert old FedEx DAS tier to unified
+    if (s.dasTierAmazon != null || s.dasTier != null) {
+      const oldFedex = s.dasTier || 'None';
+      const fedexToUnified = {
+        'None': 'None', 'Base': 'Delivery Area',
+        'Extended': 'Extended', 'Remote': 'Remote',
+        'Alaska': 'None', 'Hawaii': 'None', 'Intra-Hawaii': 'None',
+      };
+      s.dasTier = fedexToUnified[oldFedex] || 'None';
+      delete s.dasTierAmazon;
+    }
+
+    if (!s.zone) s.zone = 2;
+    if (s.fuelPct == null) s.fuelPct = 0;
+    if (s.dieselPrice == null) s.dieselPrice = 3.50;
+    if (!s.dasTier) s.dasTier = 'None';
+
+    return s;
+  }
+
   function resetToDefaults() {
-    const defaults = data.defaults;
-    const carrier = (state && state.carrier) || 'fedex-ground';
+    const defaults = fedexData.defaults;
     state = {
-      carrier,
       zone: defaults.zone || 2,
       fuelPct: defaults.fuel_pct || 0,
-      dieselPrice: defaults.diesel_price || 3.50,
-      deliveryType: 'commercial',
+      dieselPrice: 3.50,
+      isResidential: false,
       dasTier: 'None',
-      dasTierAmazon: 'None',
       unitDim: 'mm',
       unitWeight: 'kg',
       items: defaults.items.map((item, i) => ({
@@ -81,7 +113,7 @@ const UI = (() => {
   }
 
   function loadSet(setKey) {
-    const defaults = data.defaults;
+    const defaults = fedexData.defaults;
     let items;
     if (setKey === 'all') {
       items = defaults.items;
@@ -102,7 +134,6 @@ const UI = (() => {
     itemIdCounter = state.items.length;
     renderItemsTable();
     recalculate();
-    // Update active button
     document.querySelectorAll('.btn-set').forEach(b => b.classList.remove('active'));
     const activeBtn = document.querySelector(`.btn-set[data-set="${setKey}"]`);
     if (activeBtn) activeBtn.classList.add('active');
@@ -118,70 +149,14 @@ const UI = (() => {
     return JSON.parse(JSON.stringify(state));
   }
 
-  // ─── Carrier Toggle ────────────────────────────────────────────
-
-  function renderCarrierToggle() {
-    document.querySelectorAll('.carrier-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.carrier === state.carrier);
-    });
-  }
-
-  async function switchCarrier(newCarrier) {
-    if (newCarrier === state.carrier) return;
-
-    try {
-      data = await DataLoader.loadAll(newCarrier);
-    } catch (e) {
-      showToast('데이터 로드 실패: ' + e.message, 'error');
-      return;
-    }
-
-    state.carrier = newCarrier;
-    renderCarrierToggle();
-    updateCarrierUI();
-    updateHeaderTitle();
-    resetToDefaults();
-    renderSettings();
-    renderItemsTable();
-    recalculate();
-    renderMeta();
-    updateURL();
-    showToast(newCarrier === 'amazon-shipping' ? 'Amazon Shipping으로 전환' : 'FedEx Ground로 전환', 'success');
-  }
-
-  function updateHeaderTitle() {
-    const titleEl = document.getElementById('header-title');
-    if (isAmazon()) {
-      titleEl.textContent = 'Amazon Shipping 2026 배송비 계산기';
-    } else {
-      titleEl.textContent = 'FedEx Ground 2025 배송비 계산기';
-    }
-  }
-
-  function updateCarrierUI() {
-    const amazon = isAmazon();
-
-    // FedEx-only controls
-    document.getElementById('setting-fuel-pct').style.display = amazon ? 'none' : '';
-    document.getElementById('setting-delivery-type').style.display = amazon ? 'none' : '';
-    document.getElementById('setting-das-fedex').style.display = amazon ? 'none' : '';
-
-    // Amazon-only controls
-    document.getElementById('setting-diesel').style.display = amazon ? '' : 'none';
-    document.getElementById('setting-das-amazon').style.display = amazon ? '' : 'none';
-
-    updateHeaderTitle();
-  }
-
   // ─── Settings ───────────────────────────────────────────────────
 
   function renderSettings() {
     document.getElementById('zone-select').value = state.zone;
     document.getElementById('fuel-input').value = state.fuelPct;
     document.getElementById('diesel-select').value = state.dieselPrice;
-    document.getElementById('delivery-type').value = state.deliveryType;
+    document.getElementById('residential-check').checked = state.isResidential;
     document.getElementById('das-tier').value = state.dasTier;
-    document.getElementById('das-tier-amazon').value = state.dasTierAmazon;
     updateUnitToggle('dim', state.unitDim);
     updateUnitToggle('weight', state.unitWeight);
   }
@@ -297,86 +272,71 @@ const UI = (() => {
       qty: item.qty,
     }));
 
-    let result;
-    if (isAmazon()) {
-      result = amazonCalcAll(
-        calcItems,
-        state.zone,
-        state.dieselPrice,
-        state.dasTierAmazon,
-        data.rates,
-        data.surcharges
-      );
-    } else {
-      const isResidential = state.deliveryType === 'residential';
-      result = calcAll(
-        calcItems,
-        state.zone,
-        state.fuelPct,
-        isResidential,
-        state.dasTier,
-        data.rates,
-        data.surcharges
-      );
-    }
+    const fedexDas = DAS_TO_FEDEX[state.dasTier] || 'None';
+    const amazonDas = DAS_TO_AMAZON[state.dasTier] || 'None';
 
-    renderResults(result);
-    renderSummary(result);
+    const fedexResult = calcAll(
+      calcItems, state.zone, state.fuelPct, state.isResidential,
+      fedexDas, fedexData.rates, fedexData.surcharges
+    );
+
+    const amazonResult = amazonCalcAll(
+      calcItems, state.zone, state.dieselPrice,
+      amazonDas, amazonData.rates, amazonData.surcharges
+    );
+
+    // Per-item results for comparison table
+    const itemResults = calcItems.map(item => {
+      let fedex = null, amazon = null;
+      if (item.qty > 0) {
+        fedex = calcLineItem(item, state.zone, state.fuelPct, state.isResidential,
+          fedexDas, fedexData.rates, fedexData.surcharges);
+        amazon = amazonCalcLineItem(item, state.zone, state.dieselPrice,
+          amazonDas, amazonData.rates, amazonData.surcharges);
+      }
+      return { fedex, amazon, qty: item.qty, name: item.name };
+    });
+
+    renderResults(itemResults);
+    renderSummary(fedexResult, amazonResult);
+    renderCharts(fedexResult, amazonResult, itemResults);
   }
 
-  // ─── Results ────────────────────────────────────────────────────
+  // ─── Comparison Results Table ───────────────────────────────────
 
-  function renderResults(result) {
-    const tbody = document.getElementById('results-tbody');
+  function renderResults(itemResults) {
+    const tbody = document.getElementById('compare-tbody');
     tbody.innerHTML = '';
 
-    state.items.forEach((item, idx) => {
-      const calcItem = {
-        name: item.name,
-        L_cm: item.L_mm / 10,
-        W_cm: item.W_mm / 10,
-        H_cm: item.H_mm / 10,
-        weightKg: item.weightKg,
-        qty: item.qty,
-      };
-
-      let line = null;
-      if (item.qty > 0) {
-        if (isAmazon()) {
-          line = amazonCalcLineItem(calcItem, state.zone, state.dieselPrice, state.dasTierAmazon, data.rates, data.surcharges);
-        } else {
-          const isResidential = state.deliveryType === 'residential';
-          line = calcLineItem(calcItem, state.zone, state.fuelPct, isResidential, state.dasTier, data.rates, data.surcharges);
-        }
-      }
-
+    itemResults.forEach((ir, idx) => {
       const tr = document.createElement('tr');
-      if (item.qty === 0) tr.style.opacity = '0.35';
+      if (ir.qty === 0) tr.style.opacity = '0.35';
 
-      if (line) {
-        const scClass = scTypeToClass(line.scType);
+      if (ir.fedex && ir.amazon) {
+        const f = ir.fedex;
+        const a = ir.amazon;
+        const diff = a.lineTotal - f.lineTotal;
+        const diffClass = diff > 0.005 ? 'diff-positive' : diff < -0.005 ? 'diff-negative' : 'diff-zero';
+
         tr.innerHTML = `
           <td>${idx + 1}</td>
-          <td style="text-align:left">${escHtml(line.name)}</td>
-          <td>${fmt(line.actualLb)}</td>
-          <td>${fmt(line.dimLb)}</td>
-          <td><strong>${line.billableLb}</strong></td>
-          <td>$${fmt(line.baseRate)}</td>
-          <td>$${fmt(line.fuelAmount)}</td>
-          <td>$${fmt(line.rateSubtotal)}</td>
-          <td><span class="sc-tag ${scClass}">${line.scType}</span></td>
-          <td class="sc-reason">${escHtml(line.scReason)}</td>
-          <td>$${fmt(line.scAmount)}</td>
-          <td>$${fmt(line.residentialCharge)}</td>
-          <td>$${fmt(line.dasCharge)}</td>
-          <td>${calcItem.qty}</td>
-          <td><strong>$${fmt(line.lineTotal)}</strong></td>
+          <td class="cell-name">${escHtml(f.name)}</td>
+          <td class="fedex-cell">${f.billableLb}</td>
+          <td class="fedex-cell">$${fmt(f.rateSubtotal)}</td>
+          <td class="fedex-cell">${renderScCell(f)}</td>
+          <td class="fedex-cell"><strong>$${fmt(f.perPkgTotal)}</strong></td>
+          <td class="amazon-cell">${a.billableLb}</td>
+          <td class="amazon-cell">$${fmt(a.rateSubtotal)}</td>
+          <td class="amazon-cell">${renderScCell(a)}</td>
+          <td class="amazon-cell"><strong>$${fmt(a.perPkgTotal)}</strong></td>
+          <td class="${diffClass}">${fmtDiff(diff)}</td>
+          <td>${ir.qty}</td>
         `;
       } else {
         tr.innerHTML = `
           <td>${idx + 1}</td>
-          <td style="text-align:left">${escHtml(calcItem.name)}</td>
-          <td colspan="13" style="color:var(--text-m)">수량 0 — 계산 제외</td>
+          <td class="cell-name">${escHtml(ir.name)}</td>
+          <td colspan="10" style="color:var(--text-m)">수량 0 — 계산 제외</td>
         `;
       }
 
@@ -384,23 +344,198 @@ const UI = (() => {
     });
   }
 
-  function renderSummary(result) {
-    document.getElementById('sum-rate').textContent = '$' + fmt(result.rateSubtotal);
-    document.getElementById('sum-sc').textContent = '$' + fmt(result.scSubtotal);
-    document.getElementById('sum-resi').textContent = '$' + fmt(result.residentialSubtotal);
-    document.getElementById('sum-das').textContent = '$' + fmt(result.dasSubtotal);
-    document.getElementById('sum-grand').textContent = '$' + fmt(result.grandTotal);
-    document.getElementById('sum-count').textContent =
-      result.lines.length + '건 / ' + result.lines.reduce((s, l) => s + l.qty, 0) + '개';
+  function renderScCell(line) {
+    if (line.scType === 'OK') {
+      return '<span class="sc-tag ' + scTypeToClass('OK') + '">OK</span>';
+    }
+    const cls = scTypeToClass(line.scType);
+    return `<span class="sc-tag ${cls}" title="${escHtml(line.scReason)}">${line.scType}</span> $${fmt(line.scAmount)}`;
+  }
+
+  // ─── Comparison Summary ─────────────────────────────────────────
+
+  function renderSummary(fedex, amazon) {
+    const totalLines = fedex.lines.length;
+    const totalQty = fedex.lines.reduce((s, l) => s + l.qty, 0);
+    document.getElementById('sum-count').textContent = totalLines + '건 / ' + totalQty + '개';
+
+    setSummaryRow('rate', fedex.rateSubtotal, amazon.rateSubtotal);
+    setSummaryRow('sc', fedex.scSubtotal, amazon.scSubtotal);
+    setSummaryRow('resi', fedex.residentialSubtotal, amazon.residentialSubtotal);
+    setSummaryRow('das', fedex.dasSubtotal, amazon.dasSubtotal);
+    setSummaryGrandRow(fedex.grandTotal, amazon.grandTotal);
+  }
+
+  function setSummaryRow(key, fedexVal, amazonVal) {
+    document.getElementById('sum-fedex-' + key).textContent = '$' + fmt(fedexVal);
+    document.getElementById('sum-amzn-' + key).textContent = '$' + fmt(amazonVal);
+    const diff = amazonVal - fedexVal;
+    const el = document.getElementById('sum-diff-' + key);
+    el.textContent = fmtDiff(diff);
+    el.className = 'diff-cell ' + (diff > 0.005 ? 'diff-positive' : diff < -0.005 ? 'diff-negative' : 'diff-zero');
+  }
+
+  function setSummaryGrandRow(fedexTotal, amazonTotal) {
+    document.getElementById('sum-fedex-grand').textContent = '$' + fmt(fedexTotal);
+    document.getElementById('sum-amzn-grand').textContent = '$' + fmt(amazonTotal);
+    const diff = amazonTotal - fedexTotal;
+    const pct = fedexTotal > 0 ? (diff / fedexTotal * 100) : 0;
+    const el = document.getElementById('sum-diff-grand');
+    const pctStr = Math.abs(pct) >= 0.05 ? ` (${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%)` : '';
+    el.textContent = fmtDiff(diff) + pctStr;
+    el.className = 'diff-cell ' + (diff > 0.005 ? 'diff-positive' : diff < -0.005 ? 'diff-negative' : 'diff-zero');
+  }
+
+  // ─── Charts ─────────────────────────────────────────────────────
+
+  function renderCharts(fedexResult, amazonResult, itemResults) {
+    if (typeof Chart === 'undefined') return;
+
+    renderItemCompareChart(itemResults);
+    renderCostBreakdownChart(fedexResult, amazonResult);
+  }
+
+  function renderItemCompareChart(itemResults) {
+    const ctx = document.getElementById('chart-item-compare');
+    if (!ctx) return;
+
+    if (chartItemCompare) {
+      chartItemCompare.destroy();
+      chartItemCompare = null;
+    }
+
+    const activeItems = itemResults.filter(ir => ir.fedex && ir.amazon);
+    if (activeItems.length === 0) return;
+
+    const labels = activeItems.map(ir => ir.name || '(unnamed)');
+    const fedexTotals = activeItems.map(ir => round2(ir.fedex.lineTotal));
+    const amazonTotals = activeItems.map(ir => round2(ir.amazon.lineTotal));
+
+    chartItemCompare = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'FedEx Ground',
+            data: fedexTotals,
+            backgroundColor: 'rgba(34, 197, 94, 0.7)',
+            borderColor: 'rgba(34, 197, 94, 1)',
+            borderWidth: 1,
+          },
+          {
+            label: 'Amazon Shipping',
+            data: amazonTotals,
+            backgroundColor: 'rgba(59, 130, 246, 0.7)',
+            borderColor: 'rgba(59, 130, 246, 1)',
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { labels: { color: '#aaa', font: { size: 11 } } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: $${ctx.parsed.y.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+            },
+          },
+        },
+        scales: {
+          x: { ticks: { color: '#888', font: { size: 10 } }, grid: { color: '#333' } },
+          y: {
+            ticks: {
+              color: '#888',
+              callback: (v) => '$' + v.toLocaleString(),
+            },
+            grid: { color: '#333' },
+          },
+        },
+      },
+    });
+  }
+
+  function renderCostBreakdownChart(fedex, amazon) {
+    const ctx = document.getElementById('chart-cost-breakdown');
+    if (!ctx) return;
+
+    if (chartCostBreakdown) {
+      chartCostBreakdown.destroy();
+      chartCostBreakdown = null;
+    }
+
+    if (fedex.grandTotal === 0 && amazon.grandTotal === 0) return;
+
+    chartCostBreakdown = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['FedEx Ground', 'Amazon Shipping'],
+        datasets: [
+          {
+            label: 'Rate + Fuel',
+            data: [round2(fedex.rateSubtotal), round2(amazon.rateSubtotal)],
+            backgroundColor: ['rgba(34, 197, 94, 0.6)', 'rgba(59, 130, 246, 0.6)'],
+          },
+          {
+            label: 'Surcharge',
+            data: [round2(fedex.scSubtotal), round2(amazon.scSubtotal)],
+            backgroundColor: ['rgba(251, 191, 36, 0.6)', 'rgba(251, 191, 36, 0.6)'],
+          },
+          {
+            label: 'Residential',
+            data: [round2(fedex.residentialSubtotal), round2(amazon.residentialSubtotal)],
+            backgroundColor: ['rgba(244, 114, 182, 0.6)', 'rgba(244, 114, 182, 0.6)'],
+          },
+          {
+            label: 'DAS',
+            data: [round2(fedex.dasSubtotal), round2(amazon.dasSubtotal)],
+            backgroundColor: ['rgba(168, 85, 247, 0.6)', 'rgba(168, 85, 247, 0.6)'],
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { labels: { color: '#aaa', font: { size: 11 } } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: $${ctx.parsed.y.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+            },
+          },
+        },
+        scales: {
+          x: {
+            stacked: true,
+            ticks: { color: '#888' },
+            grid: { color: '#333' },
+          },
+          y: {
+            stacked: true,
+            ticks: {
+              color: '#888',
+              callback: (v) => '$' + v.toLocaleString(),
+            },
+            grid: { color: '#333' },
+          },
+        },
+      },
+    });
   }
 
   // ─── Meta Footer ────────────────────────────────────────────────
 
   function renderMeta() {
     const footer = document.getElementById('meta-info');
-    if (data.meta) {
-      footer.textContent = `Data v${data.meta.data_version} | ${data.meta.service} ${data.meta.year} | DIM ÷${data.meta.dim_divisor}`;
+    const parts = [];
+    if (fedexData.meta) {
+      parts.push(`FedEx: v${fedexData.meta.data_version} ${fedexData.meta.year}`);
     }
+    if (amazonData.meta) {
+      parts.push(`Amazon: v${amazonData.meta.data_version} ${amazonData.meta.year}`);
+    }
+    parts.push('DIM ÷139');
+    footer.textContent = parts.join(' | ');
   }
 
   // ─── URL Sync ───────────────────────────────────────────────────
@@ -412,11 +547,6 @@ const UI = (() => {
   // ─── Events ─────────────────────────────────────────────────────
 
   function bindEvents() {
-    // Carrier toggle
-    document.querySelectorAll('.carrier-btn').forEach(btn => {
-      btn.addEventListener('click', () => switchCarrier(btn.dataset.carrier));
-    });
-
     // Zone
     document.getElementById('zone-select').addEventListener('change', (e) => {
       state.zone = Number(e.target.value);
@@ -438,23 +568,16 @@ const UI = (() => {
       updateURL();
     });
 
-    // Delivery Type (FedEx)
-    document.getElementById('delivery-type').addEventListener('change', (e) => {
-      state.deliveryType = e.target.value;
+    // Residential (FedEx)
+    document.getElementById('residential-check').addEventListener('change', (e) => {
+      state.isResidential = e.target.checked;
       recalculate();
       updateURL();
     });
 
-    // DAS Tier (FedEx)
+    // DAS Tier (unified)
     document.getElementById('das-tier').addEventListener('change', (e) => {
       state.dasTier = e.target.value;
-      recalculate();
-      updateURL();
-    });
-
-    // DAS Tier (Amazon)
-    document.getElementById('das-tier-amazon').addEventListener('change', (e) => {
-      state.dasTierAmazon = e.target.value;
       recalculate();
       updateURL();
     });
@@ -521,24 +644,11 @@ const UI = (() => {
       input.onchange = async (e) => {
         try {
           const importedState = await Storage.importJSON(e.target.files[0]);
-          // Load carrier data if different
-          const importCarrier = importedState.carrier || 'fedex-ground';
-          if (importCarrier !== state.carrier) {
-            data = await DataLoader.loadAll(importCarrier);
-          }
-          state = importedState;
-          if (!state.carrier) state.carrier = 'fedex-ground';
-          if (!state.deliveryType) state.deliveryType = 'commercial';
-          if (!state.dasTier) state.dasTier = 'None';
-          if (!state.dasTierAmazon) state.dasTierAmazon = 'None';
-          if (state.dieselPrice == null) state.dieselPrice = 3.50;
+          state = migrateState(importedState);
           itemIdCounter = state.items.length;
-          renderCarrierToggle();
-          updateCarrierUI();
           renderSettings();
           renderItemsTable();
           recalculate();
-          renderMeta();
           updateURL();
           showToast('JSON 파일 가져오기 완료', 'success');
         } catch (err) {
@@ -606,11 +716,10 @@ const UI = (() => {
       listHtml = '<div class="scenario-list">';
       scenarios.forEach(s => {
         const date = new Date(s.savedAt).toLocaleDateString('ko-KR');
-        const carrierLabel = s.state && s.state.carrier === 'amazon-shipping' ? ' [Amazon]' : ' [FedEx]';
         listHtml += `
           <div class="scenario-item" onclick="UI.doLoad('${escHtml(s.name)}')">
             <div>
-              <div class="name">${escHtml(s.name)}${carrierLabel}</div>
+              <div class="name">${escHtml(s.name)}</div>
               <div class="date">${date}</div>
             </div>
             <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); UI.doDelete('${escHtml(s.name)}')">삭제</button>
@@ -630,34 +739,15 @@ const UI = (() => {
     overlay.classList.add('active');
   }
 
-  async function doLoad(name) {
+  function doLoad(name) {
     const loaded = Storage.loadScenario(name);
     if (!loaded) { showToast('시나리오를 찾을 수 없습니다', 'error'); return; }
 
-    // Load carrier data if different
-    const loadCarrier = loaded.carrier || 'fedex-ground';
-    if (loadCarrier !== state.carrier) {
-      try {
-        data = await DataLoader.loadAll(loadCarrier);
-      } catch (e) {
-        showToast('데이터 로드 실패: ' + e.message, 'error');
-        return;
-      }
-    }
-
-    state = loaded;
-    if (!state.carrier) state.carrier = 'fedex-ground';
-    if (!state.deliveryType) state.deliveryType = 'commercial';
-    if (!state.dasTier) state.dasTier = 'None';
-    if (!state.dasTierAmazon) state.dasTierAmazon = 'None';
-    if (state.dieselPrice == null) state.dieselPrice = 3.50;
+    state = migrateState(loaded);
     itemIdCounter = state.items.length;
-    renderCarrierToggle();
-    updateCarrierUI();
     renderSettings();
     renderItemsTable();
     recalculate();
-    renderMeta();
     updateURL();
     closeModal();
     showToast(`"${name}" 불러오기 완료`, 'success');
@@ -678,31 +768,6 @@ const UI = (() => {
   function showGlossaryModal() {
     const overlay = document.getElementById('modal-overlay');
     const modal = document.getElementById('modal-content');
-
-    const amazonSection = `
-    <div class="help-section">
-      <h4>📦 Amazon Shipping 추가 수수료</h4>
-      <div class="term-row">
-        <div class="term-name">NonStandard<br>(비표준)</div>
-        <div class="term-desc">다음 중 하나에 해당하면 부과:<br>• <strong>최장변 > 37"</strong><br>• <strong>둘째변 > 30"</strong><br>• <strong>셋째변 > 24"</strong><br>Zone그룹별 $11~$14.15</div>
-      </div>
-      <div class="term-row">
-        <div class="term-name">AHS-Dim<br>(치수 추가핸들링)</div>
-        <div class="term-desc">• <strong>최장변 > 47"</strong><br>• <strong>둘째변 > 42"</strong><br>• <strong>Girth > 105"</strong><br>Zone그룹별 $29.26~$37.57</div>
-      </div>
-      <div class="term-row">
-        <div class="term-name">AHS-Wgt<br>(중량 추가핸들링)</div>
-        <div class="term-desc"><strong>실중량 > 50lb</strong> 시 부과.<br>Zone그룹별 $45.89~$55.20</div>
-      </div>
-      <div class="term-row">
-        <div class="term-name">LargePkg<br>(대형)</div>
-        <div class="term-desc"><strong>Girth > 130"</strong> 또는 <strong>최장변 > 96"</strong><br>Zone그룹별 $255~$320. 최소 청구중량 90lb.</div>
-      </div>
-      <div class="term-row">
-        <div class="term-name">ExtraHeavy<br>(초중량)</div>
-        <div class="term-desc">• <strong>실중량 > 150lb</strong><br>• <strong>Girth > 165"</strong><br>• <strong>최장변 > 108"</strong><br>정액 <strong>$1,875</strong></div>
-      </div>
-    </div>`;
 
     modal.innerHTML = `
   <div class="help-modal">
@@ -740,7 +805,12 @@ const UI = (() => {
       </div>
       <div class="term-row">
         <div class="term-name">DAS<br>(배송지역 할증)</div>
-        <div class="term-desc"><strong>FedEx:</strong> 7단계 (Base~Intra-Hawaii)<br><strong>Amazon:</strong> 3단계 (Delivery Area $4.45, Extended $5.55, Remote $16.75). 미 본토 48주만.</div>
+        <div class="term-desc">
+          V5에서는 통합 4단계로 비교합니다:<br>
+          <strong>Delivery Area:</strong> FedEx $4.20/$6.20 | Amazon $4.45<br>
+          <strong>Extended:</strong> FedEx $5.25/$8.30 | Amazon $5.55<br>
+          <strong>Remote:</strong> FedEx $15.50 | Amazon $16.75
+        </div>
       </div>
     </div>
 
@@ -764,7 +834,29 @@ const UI = (() => {
       </div>
     </div>
 
-    ${amazonSection}
+    <div class="help-section">
+      <h4>📦 Amazon Shipping 추가 수수료</h4>
+      <div class="term-row">
+        <div class="term-name">NonStandard</div>
+        <div class="term-desc">최장변 > 37" / 둘째변 > 30" / 셋째변 > 24"<br>Zone그룹별 $11~$14.15</div>
+      </div>
+      <div class="term-row">
+        <div class="term-name">AHS-Dim</div>
+        <div class="term-desc">최장변 > 47" / 둘째변 > 42" / Girth > 105"<br>Zone그룹별 $29.26~$37.57</div>
+      </div>
+      <div class="term-row">
+        <div class="term-name">AHS-Wgt</div>
+        <div class="term-desc">실중량 > 50lb. Zone그룹별 $45.89~$55.20</div>
+      </div>
+      <div class="term-row">
+        <div class="term-name">LargePkg</div>
+        <div class="term-desc">Girth > 130" / 최장변 > 96". Zone그룹별 $255~$320. 최소 청구중량 90lb.</div>
+      </div>
+      <div class="term-row">
+        <div class="term-name">ExtraHeavy</div>
+        <div class="term-desc">실중량 > 150lb / Girth > 165" / 최장변 > 108". 정액 $1,875</div>
+      </div>
+    </div>
 
     <div class="tip-box">
       <strong>💡 참고:</strong> 추가 수수료는 품목당 1종류만 적용됩니다. 우선순위가 높은 것만 부과됩니다.
@@ -788,54 +880,38 @@ const UI = (() => {
     <div class="step-row">
       <span class="step-num">1</span>
       <div class="step-content">
-        <div class="step-title">배송사 선택</div>
-        <div class="step-detail">FedEx Ground 또는 Amazon Shipping 중 하나를 선택합니다. 요금 테이블과 추가 수수료 규칙이 다릅니다.</div>
+        <div class="step-title">공통 설정</div>
+        <div class="step-detail">Zone(2~8)과 DAS 티어를 선택합니다. 두 배송사에 동시 적용됩니다.</div>
       </div>
     </div>
 
     <div class="step-row">
       <span class="step-num">2</span>
       <div class="step-content">
-        <div class="step-title">Zone 선택</div>
-        <div class="step-detail">출발지에서 도착지까지 거리에 맞는 Zone(2~8)을 선택합니다.</div>
+        <div class="step-title">배송사별 설정</div>
+        <div class="step-detail"><strong>FedEx:</strong> 연료할증률(%)을 직접 입력하고, Residential 체크박스를 설정합니다.<br><strong>Amazon:</strong> 경유가격($/갤런)을 선택하면 자동으로 연료할증률이 산정됩니다.</div>
       </div>
     </div>
 
     <div class="step-row">
       <span class="step-num">3</span>
       <div class="step-content">
-        <div class="step-title">연료할증 설정</div>
-        <div class="step-detail"><strong>FedEx:</strong> 연료할증률(%)을 직접 입력합니다.<br><strong>Amazon:</strong> 경유가격($/갤런)을 선택하면 자동으로 연료할증률이 산정됩니다.</div>
+        <div class="step-title">품목 입력</div>
+        <div class="step-detail">제품명, 가로/세로/높이, 중량, 수량을 입력합니다. 세트 버튼(All/L/M/S)으로 빠르게 불러올 수 있습니다.</div>
       </div>
     </div>
 
     <div class="step-row">
       <span class="step-num">4</span>
       <div class="step-content">
-        <div class="step-title">추가 설정</div>
-        <div class="step-detail"><strong>FedEx:</strong> 배송지 유형(Commercial/Residential), DAS 티어<br><strong>Amazon:</strong> DAS 티어 (미 본토 48주만 지원)</div>
-      </div>
-    </div>
-
-    <div class="step-row">
-      <span class="step-num">5</span>
-      <div class="step-content">
-        <div class="step-title">품목 입력</div>
-        <div class="step-detail">제품명, 가로/세로/높이, 중량, 수량을 입력합니다. 여러 품목은 ➕ 행 추가 버튼으로 추가하세요.</div>
-      </div>
-    </div>
-
-    <div class="step-row">
-      <span class="step-num">6</span>
-      <div class="step-content">
-        <div class="step-title">결과 확인</div>
-        <div class="step-detail">아래 결과 테이블에서 품목별 상세 비용과 총 배송비를 확인합니다.</div>
+        <div class="step-title">비교 결과 확인</div>
+        <div class="step-detail">동일 품목에 대한 FedEx와 Amazon의 배송비를 나란히 비교합니다. 차이 금액과 그래프로 어느 배송사가 유리한지 즉시 확인할 수 있습니다.</div>
       </div>
     </div>
 
     <div class="tip-box">
       <strong>💡 팁:</strong><br>
-      • <strong>배송사를 전환</strong>하면 동일 제품에 대한 FedEx/Amazon 요금을 비교할 수 있습니다.<br>
+      • <strong>차이 컬럼:</strong> 양수(빨강) = Amazon이 비쌈, 음수(초록) = Amazon이 저렴<br>
       • <strong>💾 저장</strong>으로 시나리오를 로컬에 저장하고, <strong>🔗 공유</strong>로 URL을 복사할 수 있습니다.<br>
       • <strong>⬇ Export</strong>로 JSON 파일을 내보내고, <strong>⬆ Import</strong>로 불러올 수 있습니다.<br>
       • 각 설정과 결과 컬럼의 <strong>ⓘ</strong> 아이콘에 마우스를 올리면 용어 설명을 볼 수 있습니다.
@@ -867,6 +943,13 @@ const UI = (() => {
     });
   }
 
+  function fmtDiff(n) {
+    const abs = Math.abs(n);
+    if (abs < 0.005) return '$0.00';
+    const sign = n > 0 ? '+' : '-';
+    return sign + '$' + fmt(abs);
+  }
+
   function round2(n) { return Math.round(n * 100) / 100; }
 
   function escHtml(str) {
@@ -877,12 +960,10 @@ const UI = (() => {
   function scTypeToClass(type) {
     const map = {
       'OK': 'sc-tag--ok',
-      // FedEx types
       'AHS-Dim': 'sc-tag--ahs-dim',
       'AHS-Wgt': 'sc-tag--ahs-wgt',
       'Oversize': 'sc-tag--oversize',
       'Unauth': 'sc-tag--unauth',
-      // Amazon types
       'NonStd': 'sc-tag--nonstd',
       'LargePkg': 'sc-tag--largepkg',
       'ExtraHeavy': 'sc-tag--extraheavy',

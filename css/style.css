@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════
-   MUSICUS US Shipping Calculator — V4 Multi-Carrier (FedEx + Amazon)
+   MUSICUS US Shipping Calculator — V5 Comparison Mode
+   FedEx Ground vs Amazon Shipping side-by-side comparison
    ═══════════════════════════════════════════════════════════════════ */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -18,6 +19,17 @@
   --text-m: #666;
 
   --accent: #fff;
+
+  --fedex-color: #22c55e;
+  --fedex-bg: rgba(34, 197, 94, 0.08);
+  --fedex-border: rgba(34, 197, 94, 0.25);
+  --amazon-color: #3b82f6;
+  --amazon-bg: rgba(59, 130, 246, 0.08);
+  --amazon-border: rgba(59, 130, 246, 0.25);
+
+  --diff-positive: #f87171;
+  --diff-negative: #4ade80;
+  --diff-zero: #888;
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -48,7 +60,7 @@ body {
 
 /* ─── Container ───────────────────────────────────────────────────── */
 .container {
-  max-width: 1280px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 0.75rem;
 }
@@ -240,6 +252,71 @@ body {
   color: var(--bg);
 }
 
+/* ─── Carrier-Specific Settings (Side by Side) ───────────────────── */
+.carrier-settings-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.carrier-col {
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+}
+
+.carrier-col-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.6rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.fedex-col .carrier-col-title {
+  color: var(--fedex-color);
+  border-bottom-color: var(--fedex-border);
+}
+
+.amazon-col .carrier-col-title {
+  color: var(--amazon-color);
+  border-bottom-color: var(--amazon-border);
+}
+
+.carrier-col-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.carrier-col-note {
+  font-size: 0.7rem;
+  color: var(--text-m);
+  font-style: italic;
+  margin-top: 0.4rem;
+}
+
+/* Checkbox label */
+.checkbox-label {
+  display: flex !important;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  font-size: 0.8rem !important;
+  text-transform: none !important;
+  color: var(--text-s) !important;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--fedex-color);
+  cursor: pointer;
+}
+
 /* ─── Items Table ─────────────────────────────────────────────────── */
 .table-scroll {
   overflow-x: auto;
@@ -319,47 +396,103 @@ body {
   min-width: 40px;
 }
 
-/* ─── Results Table ───────────────────────────────────────────────── */
-.results-table {
+/* ─── Comparison Results Table ────────────────────────────────────── */
+.compare-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 0.8rem;
 }
 
-.results-table thead th {
+.compare-table thead th {
   background: var(--surface2);
   color: var(--text-s);
   font-weight: 600;
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  padding: 0.5rem 0.4rem;
+  padding: 0.45rem 0.35rem;
   text-align: center;
   white-space: nowrap;
   border-bottom: 1px solid var(--border-l);
 }
 
-.results-table tbody td {
-  padding: 0.4rem 0.35rem;
+/* FedEx header group */
+.th-fedex {
+  background: rgba(34, 197, 94, 0.12) !important;
+  color: var(--fedex-color) !important;
+  border-bottom: 2px solid var(--fedex-color) !important;
+}
+
+.th-fedex-sub {
+  background: rgba(34, 197, 94, 0.06) !important;
+  color: #6ee7a0 !important;
+}
+
+/* Amazon header group */
+.th-amazon {
+  background: rgba(59, 130, 246, 0.12) !important;
+  color: var(--amazon-color) !important;
+  border-bottom: 2px solid var(--amazon-color) !important;
+}
+
+.th-amazon-sub {
+  background: rgba(59, 130, 246, 0.06) !important;
+  color: #7cb3f7 !important;
+}
+
+.compare-table tbody td {
+  padding: 0.4rem 0.3rem;
   text-align: center;
   border-bottom: 1px solid var(--border);
   font-variant-numeric: tabular-nums;
 }
 
-.results-table tbody tr:hover {
+.compare-table tbody tr:hover {
   background: rgba(255, 255, 255, 0.03);
+}
+
+.compare-table .cell-name {
+  text-align: left;
+  max-width: 100px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.compare-table .fedex-cell {
+  background: rgba(34, 197, 94, 0.03);
+}
+
+.compare-table .amazon-cell {
+  background: rgba(59, 130, 246, 0.03);
+}
+
+/* ─── Diff Colors ─────────────────────────────────────────────────── */
+.diff-positive {
+  color: var(--diff-positive) !important;
+  font-weight: 600;
+}
+
+.diff-negative {
+  color: var(--diff-negative) !important;
+  font-weight: 600;
+}
+
+.diff-zero {
+  color: var(--diff-zero) !important;
 }
 
 /* ─── SC Tags ─────────────────────────────────────────────────────── */
 .sc-tag {
   display: inline-block;
-  padding: 0.1rem 0.4rem;
+  padding: 0.1rem 0.3rem;
   border-radius: 3px;
-  font-size: 0.65rem;
+  font-size: 0.55rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   border: 1px solid var(--border);
+  vertical-align: middle;
 }
 
 .sc-tag--ok {
@@ -387,7 +520,6 @@ body {
   border-color: #c44;
 }
 
-/* Amazon SC Tags */
 .sc-tag--nonstd {
   color: #9bd;
   border-color: #579;
@@ -403,91 +535,120 @@ body {
   border-color: #c44;
 }
 
-/* ─── Carrier Toggle ─────────────────────────────────────────────── */
-.carrier-card {
-  padding: 0.75rem 1.25rem;
+/* ─── Summary Comparison Table ────────────────────────────────────── */
+.summary-compare-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.85rem;
 }
 
-.carrier-toggle {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.carrier-btn {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.15rem;
-  padding: 0.6rem 1rem;
-  background: var(--bg);
-  border: 2px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text-m);
-  font-family: inherit;
-  cursor: pointer;
-  transition: all var(--transition);
-}
-
-.carrier-btn:hover {
-  border-color: var(--border-l);
-  color: var(--text-s);
-}
-
-.carrier-btn.active {
-  border-color: var(--text);
-  color: var(--text);
+.summary-compare-table thead th {
   background: var(--surface2);
-}
-
-.carrier-btn .carrier-name {
-  font-size: 0.9rem;
+  color: var(--text-s);
   font-weight: 600;
-}
-
-.carrier-btn .carrier-year {
   font-size: 0.65rem;
-  opacity: 0.6;
-}
-
-/* ─── Summary Panel ───────────────────────────────────────────────── */
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 0.75rem;
-}
-
-.summary-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0.75rem;
-  background: var(--bg);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-}
-
-.summary-item .label {
-  font-size: 0.6rem;
-  color: var(--text-m);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.25rem;
+  letter-spacing: 0.04em;
+  padding: 0.5rem 0.6rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border-l);
 }
 
-.summary-item .value {
-  font-size: 1.25rem;
-  font-weight: 700;
+.summary-compare-table thead .th-fedex {
+  background: rgba(34, 197, 94, 0.12) !important;
+  color: var(--fedex-color) !important;
+  border-bottom: 2px solid var(--fedex-color) !important;
+}
+
+.summary-compare-table thead .th-amazon {
+  background: rgba(59, 130, 246, 0.12) !important;
+  color: var(--amazon-color) !important;
+  border-bottom: 2px solid var(--amazon-color) !important;
+}
+
+.summary-compare-table tbody td {
+  padding: 0.55rem 0.6rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
   font-variant-numeric: tabular-nums;
 }
 
-.summary-item.grand-total {
-  border-color: var(--border-l);
+.summary-compare-table .row-label {
+  text-align: left;
+  color: var(--text-s);
+  font-weight: 500;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.summary-item.grand-total .value {
-  font-size: 1.6rem;
-  color: var(--accent);
+.summary-compare-table .fedex-cell {
+  color: var(--fedex-color);
+  font-weight: 600;
+}
+
+.summary-compare-table .amazon-cell {
+  color: var(--amazon-color);
+  font-weight: 600;
+}
+
+.summary-compare-table .diff-cell {
+  font-weight: 600;
+}
+
+.summary-compare-table .center-cell {
+  text-align: center;
+  color: var(--text-s);
+}
+
+.summary-compare-table .grand-total-row td {
+  border-top: 2px solid var(--border-l);
+  padding-top: 0.7rem;
+  padding-bottom: 0.7rem;
+  font-size: 1rem;
+}
+
+.summary-compare-table .grand-total-row .row-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.summary-compare-table .grand-total-row .fedex-cell {
+  font-size: 1.1rem;
+}
+
+.summary-compare-table .grand-total-row .amazon-cell {
+  font-size: 1.1rem;
+}
+
+.summary-compare-table .grand-total-row .diff-cell {
+  font-size: 1rem;
+}
+
+/* ─── Charts ──────────────────────────────────────────────────────── */
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.chart-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+}
+
+.chart-box-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-m);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.5rem;
+  text-align: center;
 }
 
 /* ─── Row Actions ─────────────────────────────────────────────────── */
@@ -668,15 +829,6 @@ body {
   color: var(--text-m);
 }
 
-/* ─── SC Reason ───────────────────────────────────────────────────── */
-.sc-reason {
-  font-size: 0.75rem;
-  color: var(--text);
-  opacity: 0.75;
-  max-width: 180px;
-  word-break: keep-all;
-}
-
 /* ─── Footer ──────────────────────────────────────────────────────── */
 .footer {
   text-align: center;
@@ -726,6 +878,12 @@ body {
 }
 
 /* ─── Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .chart-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
   html {
     font-size: 13px;
@@ -745,12 +903,12 @@ body {
     grid-template-columns: 1fr 1fr;
   }
 
-  .summary-grid {
-    grid-template-columns: 1fr 1fr;
+  .carrier-settings-row {
+    grid-template-columns: 1fr;
   }
 
-  .summary-item.grand-total {
-    grid-column: 1 / -1;
+  .chart-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -863,7 +1021,6 @@ body {
   visibility: visible;
 }
 
-/* On narrow screens, prevent tooltip overflow */
 th .tip::after,
 th .tip:hover::after {
   left: auto;

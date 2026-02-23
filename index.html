@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>📦 US 배송비 계산기 — MUSICUS</title>
+  <title>📦 FedEx vs Amazon 배송비 비교 계산기 — MUSICUS</title>
   <meta name="description"
-    content="FedEx Ground / Amazon Shipping 미국 국내 배송비 계산기. Zone별 요금, 추가요금, DAS를 즉시 계산합니다.">
+    content="FedEx Ground vs Amazon Shipping 미국 국내 배송비 비교 계산기. 동일 품목의 두 배송사 비용을 즉시 비교합니다.">
   <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -19,8 +19,8 @@
       <div class="header-brand">
         <span class="logo">📦</span>
         <div>
-          <h1 id="header-title">FedEx Ground 2025 배송비 계산기</h1>
-          <div class="subtitle">MUSICUS — US Domestic Shipping Calculator (V4)</div>
+          <h1 id="header-title">FedEx vs Amazon 배송비 비교 계산기</h1>
+          <div class="subtitle">MUSICUS — US Domestic Shipping Cost Comparator (V5)</div>
         </div>
       </div>
       <div class="header-actions">
@@ -35,22 +35,7 @@
       </div>
     </header>
 
-    <!-- ═══ Carrier Toggle ═══ -->
-    <section class="card carrier-card">
-      <div class="card-title"><span class="icon">🚚</span> 배송사 선택</div>
-      <div class="carrier-toggle" id="carrier-toggle">
-        <button class="carrier-btn active" data-carrier="fedex-ground">
-          <span class="carrier-name">FedEx Ground</span>
-          <span class="carrier-year">2025</span>
-        </button>
-        <button class="carrier-btn" data-carrier="amazon-shipping">
-          <span class="carrier-name">Amazon Shipping</span>
-          <span class="carrier-year">2026</span>
-        </button>
-      </div>
-    </section>
-
-    <!-- ═══ Settings ═══ -->
+    <!-- ═══ Common Settings ═══ -->
     <section class="card">
       <div class="card-title"><span class="icon">⚙️</span> 공통 설정</div>
       <div class="settings-grid">
@@ -68,70 +53,14 @@
           </select>
         </div>
 
-        <!-- FedEx: user-input fuel % -->
-        <div class="setting-group" id="setting-fuel-pct">
-          <label for="fuel-input">연료할증 (%) <span class="tip"
-              data-tip="기본운임에 추가되는 유류비 비율. FedEx 공지 기준 (보통 10~15%)">ⓘ</span></label>
-          <input type="number" id="fuel-input" value="0" min="0" max="100" step="0.1">
-        </div>
-
-        <!-- Amazon: diesel price dropdown -->
-        <div class="setting-group" id="setting-diesel" style="display:none">
-          <label for="diesel-select">경유가격 ($/gal) <span class="tip"
-              data-tip="미국 주간 평균 경유가격. DOE/EIA 기준으로 연료할증률 자동 산정됩니다.">ⓘ</span></label>
-          <select id="diesel-select">
-            <option value="2.90">$2.90 (14.50%)</option>
-            <option value="3.02">$3.02 (14.75%)</option>
-            <option value="3.14">$3.14 (15.00%)</option>
-            <option value="3.26">$3.26 (15.25%)</option>
-            <option value="3.38">$3.38 (15.50%)</option>
-            <option value="3.50" selected>$3.50 (15.75%)</option>
-            <option value="3.62">$3.62 (16.00%)</option>
-            <option value="3.74">$3.74 (16.25%)</option>
-            <option value="3.86">$3.86 (16.50%)</option>
-            <option value="3.98">$3.98 (16.75%)</option>
-            <option value="4.10">$4.10 (17.00%)</option>
-            <option value="4.22">$4.22 (17.25%)</option>
-            <option value="4.34">$4.34 (17.50%)</option>
-            <option value="4.46">$4.46 (17.75%)</option>
-            <option value="4.58">$4.58 (18.00%)</option>
-          </select>
-        </div>
-
-        <!-- FedEx: delivery type -->
-        <div class="setting-group" id="setting-delivery-type">
-          <label for="delivery-type">배송지 유형 <span class="tip"
-              data-tip="Commercial=사업장(별도 할증 없음), Residential=주거지(개당 $5.95 추가)">ⓘ</span></label>
-          <select id="delivery-type">
-            <option value="commercial">Commercial</option>
-            <option value="residential">Residential</option>
-          </select>
-        </div>
-
-        <!-- FedEx: DAS 7 tiers -->
-        <div class="setting-group" id="setting-das-fedex">
+        <div class="setting-group">
           <label for="das-tier">DAS 티어 <span class="tip"
-              data-tip="배송지역 할증(Delivery Area Surcharge). 도착지 ZIP코드에 따라 추가 요금 부과. 대부분 None">ⓘ</span></label>
+              data-tip="배송지역 할증(Delivery Area Surcharge). 두 배송사에 공통 적용. 각 배송사 내부 DAS 금액은 다릅니다.">ⓘ</span></label>
           <select id="das-tier">
             <option value="None">None</option>
-            <option value="Base">Base</option>
+            <option value="Delivery Area">Delivery Area</option>
             <option value="Extended">Extended</option>
             <option value="Remote">Remote</option>
-            <option value="Alaska">Alaska</option>
-            <option value="Hawaii">Hawaii</option>
-            <option value="Intra-Hawaii">Intra-Hawaii</option>
-          </select>
-        </div>
-
-        <!-- Amazon: DAS 3 tiers -->
-        <div class="setting-group" id="setting-das-amazon" style="display:none">
-          <label for="das-tier-amazon">DAS 티어 <span class="tip"
-              data-tip="배송지역 할증. Amazon은 미 본토 48주만 지원. Delivery Area $4.45, Extended $5.55, Remote $16.75">ⓘ</span></label>
-          <select id="das-tier-amazon">
-            <option value="None">None</option>
-            <option value="Delivery Area">Delivery Area ($4.45)</option>
-            <option value="Extended Delivery Area">Extended ($5.55)</option>
-            <option value="Remote Area">Remote ($16.75)</option>
           </select>
         </div>
 
@@ -147,6 +76,57 @@
           <div class="unit-toggle" id="unit-weight">
             <button data-value="kg" class="active">kg</button>
             <button data-value="lb">lb</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ Carrier-Specific Settings ═══ -->
+    <section class="card">
+      <div class="card-title"><span class="icon">🚚</span> 배송사별 설정</div>
+      <div class="carrier-settings-row">
+        <div class="carrier-col fedex-col">
+          <div class="carrier-col-title">FedEx Ground 2025</div>
+          <div class="carrier-col-body">
+            <div class="setting-group">
+              <label for="fuel-input">연료할증 (%) <span class="tip"
+                  data-tip="기본운임에 추가되는 유류비 비율. FedEx 공지 기준 (보통 10~15%)">ⓘ</span></label>
+              <input type="number" id="fuel-input" value="0" min="0" max="100" step="0.1">
+            </div>
+            <div class="setting-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="residential-check">
+                <span>Residential 배송 <span class="tip"
+                    data-tip="주거지 배송 할증 $5.95/개. 체크 시 FedEx에만 적용 (Amazon은 Residential 할증 없음)">ⓘ</span></span>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="carrier-col amazon-col">
+          <div class="carrier-col-title">Amazon Shipping 2026</div>
+          <div class="carrier-col-body">
+            <div class="setting-group">
+              <label for="diesel-select">경유가격 ($/gal) <span class="tip"
+                  data-tip="미국 주간 평균 경유가격. DOE/EIA 기준으로 연료할증률 자동 산정됩니다.">ⓘ</span></label>
+              <select id="diesel-select">
+                <option value="2.90">$2.90 (14.50%)</option>
+                <option value="3.02">$3.02 (14.75%)</option>
+                <option value="3.14">$3.14 (15.00%)</option>
+                <option value="3.26">$3.26 (15.25%)</option>
+                <option value="3.38">$3.38 (15.50%)</option>
+                <option value="3.50" selected>$3.50 (15.75%)</option>
+                <option value="3.62">$3.62 (16.00%)</option>
+                <option value="3.74">$3.74 (16.25%)</option>
+                <option value="3.86">$3.86 (16.50%)</option>
+                <option value="3.98">$3.98 (16.75%)</option>
+                <option value="4.10">$4.10 (17.00%)</option>
+                <option value="4.22">$4.22 (17.25%)</option>
+                <option value="4.34">$4.34 (17.50%)</option>
+                <option value="4.46">$4.46 (17.75%)</option>
+                <option value="4.58">$4.58 (18.00%)</option>
+              </select>
+            </div>
+            <div class="carrier-col-note">Residential 할증 없음 (항상 Commercial)</div>
           </div>
         </div>
       </div>
@@ -187,62 +167,100 @@
       </div>
     </section>
 
-    <!-- ═══ Results ═══ -->
+    <!-- ═══ Comparison Results ═══ -->
     <section class="card">
-      <div class="card-title"><span class="icon">📊</span> 계산 결과</div>
+      <div class="card-title"><span class="icon">📊</span> 비교 결과</div>
       <div class="table-scroll">
-        <table class="results-table">
+        <table class="compare-table">
           <thead>
             <tr>
-              <th>#</th>
-              <th>품명</th>
-              <th><span class="tip" data-tip="실제 저울 중량을 lb로 환산한 값">실중량(lb)</span></th>
-              <th><span class="tip" data-tip="가로×세로×높이(inch) ÷ 139. 박스가 크면 실중량보다 높아짐">부피중량(lb)</span></th>
-              <th><span class="tip" data-tip="실중량과 부피중량 중 큰 값. 이 중량으로 요금 산정">청구중량(lb)</span></th>
-              <th>기본운임</th>
-              <th>연료할증</th>
-              <th>운임소계</th>
-              <th><span class="tip" data-tip="추가 수수료 종류 (FedEx: AHS/Oversize/Unauth, Amazon: NonStd/AHS/LargePkg/ExtraHeavy)">SC종류</span></th>
-              <th><span class="tip" data-tip="해당 SC가 부과된 구체적 사유 (예: 최장변 초과, 실중량 초과)">SC근거</span></th>
-              <th>SC금액</th>
-              <th><span class="tip" data-tip="주거지 배송 할증. FedEx: $5.95/개, Amazon: 없음">Resi.</span></th>
-              <th><span class="tip" data-tip="배송지역 할증. 선택한 DAS 티어에 따른 추가 요금">DAS</span></th>
-              <th>수량</th>
-              <th>총배송비</th>
+              <th rowspan="2">#</th>
+              <th rowspan="2">품명</th>
+              <th colspan="4" class="th-fedex">FedEx Ground</th>
+              <th colspan="4" class="th-amazon">Amazon Shipping</th>
+              <th rowspan="2">차이</th>
+              <th rowspan="2">수량</th>
+            </tr>
+            <tr>
+              <th class="th-fedex-sub">청구(lb)</th>
+              <th class="th-fedex-sub">운임</th>
+              <th class="th-fedex-sub"><span class="tip" data-tip="추가 수수료 (AHS/Oversize/Unauth 등)">SC</span></th>
+              <th class="th-fedex-sub">합계</th>
+              <th class="th-amazon-sub">청구(lb)</th>
+              <th class="th-amazon-sub">운임</th>
+              <th class="th-amazon-sub"><span class="tip" data-tip="추가 수수료 (NonStd/AHS/LargePkg/ExtraHeavy 등)">SC</span></th>
+              <th class="th-amazon-sub">합계</th>
             </tr>
           </thead>
-          <tbody id="results-tbody"></tbody>
+          <tbody id="compare-tbody"></tbody>
         </table>
       </div>
     </section>
 
-    <!-- ═══ Summary ═══ -->
+    <!-- ═══ Comparison Summary ═══ -->
     <section class="card">
-      <div class="card-title"><span class="icon">💰</span> 요약</div>
-      <div class="summary-grid">
-        <div class="summary-item">
-          <span class="label">활성 품목</span>
-          <span class="value" id="sum-count">0건 / 0개</span>
+      <div class="card-title"><span class="icon">💰</span> 비교 요약</div>
+      <div class="table-scroll">
+        <table class="summary-compare-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th class="th-fedex">FedEx Ground</th>
+              <th class="th-amazon">Amazon Shipping</th>
+              <th>차이</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="row-label">활성 품목</td>
+              <td id="sum-count" colspan="3" class="center-cell">0건 / 0개</td>
+            </tr>
+            <tr>
+              <td class="row-label">운임 합계</td>
+              <td id="sum-fedex-rate" class="fedex-cell">$0.00</td>
+              <td id="sum-amzn-rate" class="amazon-cell">$0.00</td>
+              <td id="sum-diff-rate" class="diff-cell"></td>
+            </tr>
+            <tr>
+              <td class="row-label">SC 합계</td>
+              <td id="sum-fedex-sc" class="fedex-cell">$0.00</td>
+              <td id="sum-amzn-sc" class="amazon-cell">$0.00</td>
+              <td id="sum-diff-sc" class="diff-cell"></td>
+            </tr>
+            <tr>
+              <td class="row-label">Residential</td>
+              <td id="sum-fedex-resi" class="fedex-cell">$0.00</td>
+              <td id="sum-amzn-resi" class="amazon-cell">$0.00</td>
+              <td id="sum-diff-resi" class="diff-cell"></td>
+            </tr>
+            <tr>
+              <td class="row-label">DAS</td>
+              <td id="sum-fedex-das" class="fedex-cell">$0.00</td>
+              <td id="sum-amzn-das" class="amazon-cell">$0.00</td>
+              <td id="sum-diff-das" class="diff-cell"></td>
+            </tr>
+            <tr class="grand-total-row">
+              <td class="row-label">총 배송비</td>
+              <td id="sum-fedex-grand" class="fedex-cell">$0.00</td>
+              <td id="sum-amzn-grand" class="amazon-cell">$0.00</td>
+              <td id="sum-diff-grand" class="diff-cell"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═══ Charts ═══ -->
+    <section class="card">
+      <div class="card-title"><span class="icon">📈</span> 비용 비교 그래프</div>
+      <div class="chart-grid">
+        <div class="chart-box">
+          <div class="chart-box-title">품목별 비용 비교</div>
+          <canvas id="chart-item-compare"></canvas>
         </div>
-        <div class="summary-item">
-          <span class="label">운임 합계</span>
-          <span class="value" id="sum-rate">$0.00</span>
-        </div>
-        <div class="summary-item">
-          <span class="label">SC 합계</span>
-          <span class="value" id="sum-sc">$0.00</span>
-        </div>
-        <div class="summary-item">
-          <span class="label">Residential</span>
-          <span class="value" id="sum-resi">$0.00</span>
-        </div>
-        <div class="summary-item">
-          <span class="label">DAS</span>
-          <span class="value" id="sum-das">$0.00</span>
-        </div>
-        <div class="summary-item grand-total">
-          <span class="label">총 배송비</span>
-          <span class="value" id="sum-grand">$0.00</span>
+        <div class="chart-box">
+          <div class="chart-box-title">비용 구성 비교</div>
+          <canvas id="chart-cost-breakdown"></canvas>
         </div>
       </div>
     </section>
@@ -265,6 +283,7 @@
   <div class="toast" id="toast"></div>
 
   <!-- ═══ Scripts ═══ -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="js/calculator.js"></script>
   <script src="js/amazon-calculator.js"></script>
   <script src="js/data-loader.js"></script>
