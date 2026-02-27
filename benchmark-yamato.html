@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yamato ベンチマーク — MUSICUS</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: #0a0a0a; color: #eee; padding: 2rem; line-height: 1.6; }
+  .back-link { display: inline-block; color: #69c; text-decoration: none; font-size: 0.85rem; margin-bottom: 1rem; }
+  .back-link:hover { text-decoration: underline; }
+  h1 { font-size: 1.8rem; margin-bottom: 0.3rem; }
+  h2 { font-size: 1.2rem; margin: 2.5rem 0 1rem; color: #aaa; border-bottom: 1px solid #333; padding-bottom: 0.5rem; }
+  h3 { font-size: 1rem; margin: 1.5rem 0 0.5rem; color: #ccc; }
+  .subtitle { color: #666; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  .method-box { background: #181818; border: 1px solid #333; border-radius: 8px; padding: 1.2rem; margin-bottom: 2rem; font-size: 0.85rem; color: #bbb; }
+  .method-box strong { color: #eee; }
+  .method-box ul { margin: 0.5rem 0 0 1.2rem; }
+  .method-box li { margin-bottom: 0.3rem; }
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .stat-card { background: #181818; border: 1px solid #333; border-radius: 8px; padding: 1.2rem; text-align: center; }
+  .stat-card .num { font-size: 2rem; font-weight: 700; }
+  .stat-card .label { font-size: 0.7rem; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
+  .pass { color: #6c6; }
+  .fail { color: #f66; }
+  .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+  .chart-box { background: #181818; border: 1px solid #333; border-radius: 8px; padding: 1.2rem; }
+  .chart-box canvas { max-height: 320px; }
+  .full-width { grid-column: 1 / -1; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-bottom: 2rem; }
+  th { background: #222; color: #aaa; font-weight: 600; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.6rem 0.4rem; text-align: center; border-bottom: 1px solid #444; position: sticky; top: 0; }
+  td { padding: 0.45rem 0.35rem; text-align: center; border-bottom: 1px solid #222; font-variant-numeric: tabular-nums; }
+  tr:hover { background: rgba(255,255,255,0.03); }
+  .match { color: #6c6; } .mismatch { color: #f66; font-weight: 700; }
+  .badge { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 3px; font-size: 0.65rem; font-weight: 600; border: 1px solid; }
+  .badge-pass { color: #6c6; border-color: #4a4; }
+  .badge-fail { color: #f66; border-color: #c44; }
+  .yamato-accent { color: #ef4444; }
+  footer { text-align: center; color: #444; font-size: 0.7rem; margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #222; }
+  @media (max-width: 768px) { .chart-row { grid-template-columns: 1fr; } body { padding: 1rem; } }
+</style>
+</head>
+<body>
+
+<a href="index.html" class="back-link">&larr; 계산기로 돌아가기</a>
+
+<h1>🇯🇵 Yamato ベンチマーク 検証レポート</h1>
+<div class="subtitle">MUSICUS ヤマト運輸 TA-Q-BIN 配送料計算機 — 独立検証</div>
+<div class="subtitle">생성일: 2026-02-24 | 총 25건 테스트</div>
+
+<div class="method-box">
+  <strong>검증 방법</strong>
+  <ul>
+    <li>LLM(Claude Opus 4.6)이 야마토 운임표 PDF 원문 기준으로 <strong>독립적으로</strong> 예상 값을 산출</li>
+    <li>프로그램 계산기(yamato-calculator.js)와 동일한 입력으로 25건 테스트</li>
+    <li>검증 항목: Size 판정, 기본운임 조회, JSON 직접 조회, Cool할증, 당일배송, 할인, 오류검증</li>
+    <li>비교: LLM 예상값 vs 프로그램 계산값 vs JSON 직접조회값 — 3중 검증</li>
+    <li>모든 항목 일치 시 PASS</li>
+  </ul>
+</div>
+
+<div class="summary-grid">
+  <div class="stat-card">
+    <div class="num pass">25/25</div>
+    <div class="label">전체 통과</div>
+  </div>
+  <div class="stat-card">
+    <div class="num">8/8</div>
+    <div class="label">기본 운임 (8 Size)</div>
+  </div>
+  <div class="stat-card">
+    <div class="num">3/3</div>
+    <div class="label">현내배송 (Intrapref)</div>
+  </div>
+  <div class="stat-card">
+    <div class="num pass">PASS</div>
+    <div class="label">최종 결과</div>
+  </div>
+</div>
+
+<h2>차트 분석</h2>
+
+<div class="chart-row">
+  <div class="chart-box">
+    <h3>LLM 예상값 vs 프로그램 — 기본운임 (¥)</h3>
+    <canvas id="chart-scatter"></canvas>
+  </div>
+  <div class="chart-box">
+    <h3>테스트별 개당 합계 (¥)</h3>
+    <canvas id="chart-bar"></canvas>
+  </div>
+</div>
+
+<div class="chart-row">
+  <div class="chart-box">
+    <h3>Size 티어 분포</h3>
+    <canvas id="chart-size-dist"></canvas>
+  </div>
+  <div class="chart-box">
+    <h3>편차: LLM vs 프로그램 (¥)</h3>
+    <canvas id="chart-deviation"></canvas>
+  </div>
+</div>
+
+<h2>상세 결과 — 25건</h2>
+<div style="overflow-x:auto">
+<table>
+<thead><tr>
+  <th>#</th><th>테스트 설명</th><th>치수/중량</th>
+  <th>Size(예상)</th><th>Size(계산)</th><th>Size일치</th>
+  <th>운임(예상)</th><th>운임(계산)</th><th>운임(JSON)</th><th>운임일치</th>
+  <th>Cool</th><th>당일</th><th>할인</th><th>개당합계</th><th>결과</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td>1</td>
+  <td style="text-align:left">Size 60 Kanto→Kansai Cash</td>
+  <td>30×15×10 / 1.5kg</td>
+  <td>60</td>
+  <td>60 (sum)</td>
+  <td class="match">O</td>
+  <td>¥1,060</td>
+  <td>¥1,060</td>
+  <td>¥1,060</td>
+  <td class="match">O</td>
+  <td>-</td>
+  <td>-</td>
+  <td>-</td>
+  <td><strong>¥1,060</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>2</td>
+  <td style="text-align:left">Size 80 Kanto→Kansai Cash</td>
+  <td>40×20×15 / 4kg</td>
+  <td>80</td>
+  <td>80 (sum)</td>
+  <td class="match">O</td>
+  <td>¥1,350</td>
+  <td>¥1,350</td>
+  <td>¥1,350</td>
+  <td class="match">O</td>
+  <td>-</td>
+  <td>-</td>
+  <td>-</td>
+  <td><strong>¥1,350</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>3</td>
+  <td style="text-align:left">Size 100 Kanto→Kansai Cash</td>
+  <td>50×25×20 / 9kg</td>
+  <td>100</td>
+  <td>100 (sum)</td>
+  <td class="match">O</td>
+  <td>¥1,650</td>
+  <td>¥1,650</td>
+  <td>¥1,650</td>
+  <td class="match">O</td>
+  <td>-</td>
+  <td>-</td>
+  <td>-</td>
+  <td><strong>¥1,650</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>4</td>
+  <td style="text-align:left">Size 120 Kanto→Kansai Cash</td>
+  <td>60×30×25 / 12kg</td>
+  <td>120</td>
+  <td>120 (sum)</td>
+  <td class="match">O</td>
+  <td>¥2,170</td>
+  <td>¥2,170</td>
+  <td>¥2,170</td>
+  <td class="match">O</td>
+  <td>-</td>
+  <td>-</td>
+  <td>-</td>
+  <td><strong>¥2,170</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>5</td>
+  <td style="text-align:left">Size 140 Kanto→Kansai Cash</td>
+  <td>70×35×30 / 18kg</td>
+  <td>140</td>
+  <td>140 (sum)</td>
+  <td class="match">O</td>
+  <td>¥2,780</td>
+  <td>¥2,780</td>
+  <td>¥2,780</td>
+  <td class="match">O</td>
+  <td>-</td>
+  <td>-</td>
+  <td>-</td>
+  <td><strong>¥2,780</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>6</td>
+  <td style="text-align:left">Size 160 Kanto→Kansai Cash</td>
+  <td>80×40×35 / 23kg</td>
+  <td>160</td>
+  <td>160 (sum)</td>
+  <td class="match">O</td>
+  <td>¥3,160</td>
+  <td>¥3,160</td>
+  <td>¥3,160</td>
+  <td class="match">O</td>
+  <td>-</td>
+  <td>-</td>
+  <td>-</td>
+  <td><strong>¥3,160</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>7</td>
+  <td style="text-align:left">Size 180 Kanto→Kansai Cash</td>
+  <td>90×50×35 / 28kg</td>
+  <td>180</td>
+  <td>180 (sum)</td>
+  <td class="match">O</td>
+  <td>¥4,480</td>
+  <td>¥4,480</td>
+  <td>¥4,480</td>
+  <td class="match">O</td>
+  <td>-</td>
+  <td>-</td>
+  <td>-</td>
+  <td><strong>¥4,480</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>8</td>
+  <td style="text-align:left">Size 200 Kanto→Kansai Cash</td>
+  <td>100×55×40 / 25kg</td>
+  <td>200</td>
+  <td>200 (sum)</td>
+  <td class="match">O</td>
+  <td>¥5,410</td>
+  <td>¥5,410</td>
+  <td>¥5,410</td>
+  <td class="match">O</td>
+  <td>-</td>
+  <td>-</td>
+  <td>-</td>
+  <td><strong>¥5,410</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>9</td>
+  <td style="text-align:left">Size 100 Kanto→Kansai Cashless</td>
+  <td>50×25×20 / 9kg</td>
+  <td>100</td>
+  <td>100 (sum)</td>
+  <td class="match">O</td>
+  <td>¥1,650</td>
+  <td>¥1,650</td>
+  <td>¥1,650</td>
+  <td class="match">O</td>
+  <td>-</td>
+  <td>-</td>
+  <td>-</td>
+  <td><strong>¥1,650</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>10</td>
+  <td style="text-align:left">Size 120 Kanto→Kansai Cashless</td>
+  <td>60×30×25 / 12kg</td>
+  <td>120</td>
+  <td>120 (sum)</td>
+  <td class="match">O</td>
+  <td>¥2,167</td>
+  <td>¥2,167</td>
+  <td>¥2,167</td>
+  <td class="match">O</td>
+  <td>-</td>
+  <td>-</td>
+  <td>-</td>
+  <td><strong>¥2,167</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>11</td>
+  <td style="text-align:left">Size 120 Hokkaido→Okinawa Cash</td>
+  <td>60×30×25 / 12kg</td>
+  <td>120</td>
+  <td>120 (sum)</td>
+  <td class="match">O</td>
+  <td>¥4,240</td>
+  <td>¥4,240</td>
+  <td>¥4,240</td>
+  <td class="match">O</td>
+  <td>-</td>
+  <td>-</td>
+  <td>-</td>
+  <td><strong>¥4,240</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>12</td>
+  <td style="text-align:left">Size 80 Kyushu→KitaTohoku Cash</td>
+  <td>40×20×15 / 4kg</td>
+  <td>80</td>
+  <td>80 (sum)</td>
+  <td class="match">O</td>
+  <td>¥2,050</td>
+  <td>¥2,050</td>
+  <td>¥2,050</td>
+  <td class="match">O</td>
+  <td>-</td>
+  <td>-</td>
+  <td>-</td>
+  <td><strong>¥2,050</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>13</td>
+  <td style="text-align:left">Size 100 Chubu→Shikoku Cashless</td>
+  <td>50×25×20 / 9kg</td>
+  <td>100</td>
+  <td>100 (sum)</td>
+  <td class="match">O</td>
+  <td>¥1,650</td>
+  <td>¥1,650</td>
+  <td>¥1,650</td>
+  <td class="match">O</td>
+  <td>-</td>
+  <td>-</td>
+  <td>-</td>
+  <td><strong>¥1,650</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>14</td>
+  <td style="text-align:left">Intrapref Kanto Cash Size 80</td>
+  <td>40×20×15 / 4kg</td>
+  <td>80</td>
+  <td>80 (sum)</td>
+  <td class="match">O</td>
+  <td>¥1,090</td>
+  <td>¥1,090</td>
+  <td>¥1,090</td>
+  <td class="match">O</td>
+  <td>-</td>
+  <td>-</td>
+  <td>-</td>
+  <td><strong>¥1,090</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>15</td>
+  <td style="text-align:left">Intrapref Kansai Cashless S120</td>
+  <td>60×30×25 / 12kg</td>
+  <td>120</td>
+  <td>120 (sum)</td>
+  <td class="match">O</td>
+  <td>¥1,727</td>
+  <td>¥1,727</td>
+  <td>¥1,727</td>
+  <td class="match">O</td>
+  <td>-</td>
+  <td>-</td>
+  <td>-</td>
+  <td><strong>¥1,727</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>16</td>
+  <td style="text-align:left">Okinawa samePref (no intrapref)</td>
+  <td>50×25×20 / 9kg</td>
+  <td>100</td>
+  <td>100 (sum)</td>
+  <td class="match">O</td>
+  <td>¥1,530</td>
+  <td>¥1,530</td>
+  <td>¥1,530</td>
+  <td class="match">O</td>
+  <td>-</td>
+  <td>-</td>
+  <td>-</td>
+  <td><strong>¥1,530</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>17</td>
+  <td style="text-align:left">Weight upgrade 60→80</td>
+  <td>30×15×10 / 4kg</td>
+  <td>80</td>
+  <td>80 (wt)</td>
+  <td class="match">O</td>
+  <td>¥1,350</td>
+  <td>¥1,350</td>
+  <td>¥1,350</td>
+  <td class="match">O</td>
+  <td>-</td>
+  <td>-</td>
+  <td>-</td>
+  <td><strong>¥1,350</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>18</td>
+  <td style="text-align:left">Weight upgrade 80→120</td>
+  <td>40×20×20 / 12kg</td>
+  <td>120</td>
+  <td>120 (wt)</td>
+  <td class="match">O</td>
+  <td>¥2,170</td>
+  <td>¥2,170</td>
+  <td>¥2,170</td>
+  <td class="match">O</td>
+  <td>-</td>
+  <td>-</td>
+  <td>-</td>
+  <td><strong>¥2,170</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>19</td>
+  <td style="text-align:left">Size 80 + Cool chilled</td>
+  <td>40×20×15 / 4kg</td>
+  <td>80</td>
+  <td>80 (sum)</td>
+  <td class="match">O</td>
+  <td>¥1,350</td>
+  <td>¥1,350</td>
+  <td>¥1,350</td>
+  <td class="match">O</td>
+  <td>¥330</td>
+  <td>-</td>
+  <td>-</td>
+  <td><strong>¥1,680</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>20</td>
+  <td style="text-align:left">Size 100 + Cool frozen</td>
+  <td>50×25×20 / 9kg</td>
+  <td>100</td>
+  <td>100 (sum)</td>
+  <td class="match">O</td>
+  <td>¥1,650</td>
+  <td>¥1,650</td>
+  <td>¥1,650</td>
+  <td class="match">O</td>
+  <td>¥440</td>
+  <td>-</td>
+  <td>-</td>
+  <td><strong>¥2,090</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>21</td>
+  <td style="text-align:left">Size 140 + Cool (exceeds max)</td>
+  <td>70×35×30 / 18kg</td>
+  <td>140</td>
+  <td>140 (sum)</td>
+  <td class="match">O</td>
+  <td>¥2,780</td>
+  <td>¥2,780</td>
+  <td>¥2,780</td>
+  <td class="match">O</td>
+  <td>OVER</td>
+  <td>-</td>
+  <td>-</td>
+  <td><strong>¥2,780</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>22</td>
+  <td style="text-align:left">Size 100 + Same-day standard</td>
+  <td>50×25×20 / 9kg</td>
+  <td>100</td>
+  <td>100 (sum)</td>
+  <td class="match">O</td>
+  <td>¥1,650</td>
+  <td>¥1,650</td>
+  <td>¥1,650</td>
+  <td class="match">O</td>
+  <td>-</td>
+  <td>¥550</td>
+  <td>-</td>
+  <td><strong>¥2,200</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>23</td>
+  <td style="text-align:left">Okinawa route + Same-day</td>
+  <td>50×25×20 / 9kg</td>
+  <td>100</td>
+  <td>100 (sum)</td>
+  <td class="match">O</td>
+  <td>¥2,710</td>
+  <td>¥2,710</td>
+  <td>¥2,710</td>
+  <td class="match">O</td>
+  <td>-</td>
+  <td>¥330</td>
+  <td>-</td>
+  <td><strong>¥3,040</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>24</td>
+  <td style="text-align:left">Dropoff + Digital (-170)</td>
+  <td>50×25×20 / 9kg</td>
+  <td>100</td>
+  <td>100 (sum)</td>
+  <td class="match">O</td>
+  <td>¥1,650</td>
+  <td>¥1,650</td>
+  <td>¥1,650</td>
+  <td class="match">O</td>
+  <td>-</td>
+  <td>-</td>
+  <td>¥-170</td>
+  <td><strong>¥1,480</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr>
+  <td>25</td>
+  <td style="text-align:left">MemberDrop + Drop + Digital</td>
+  <td>50×25×20 / 9kg</td>
+  <td>100</td>
+  <td>100 (sum)</td>
+  <td class="match">O</td>
+  <td>¥1,650</td>
+  <td>¥1,650</td>
+  <td>¥1,650</td>
+  <td class="match">O</td>
+  <td>-</td>
+  <td>-</td>
+  <td>¥-210</td>
+  <td><strong>¥1,440</strong></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+
+</tbody>
+</table>
+</div>
+
+<h2>테스트 커버리지</h2>
+<div class="method-box">
+  <ul>
+    <li><strong>기본 운임:</strong> 8개 Size 티어 (60~200) — 모든 요금대 확인</li>
+    <li><strong>결제 방법:</strong> 현금(Cash) + 캐시리스(Cashless) — 각각 별도 요금표 조회</li>
+    <li><strong>경로 다양성:</strong> Kanto→Kansai, Hokkaido→Okinawa, Kyushu→KitaTohoku, Chubu→Shikoku 등</li>
+    <li><strong>현내배송:</strong> Kanto, Kansai 현내 + 오키나와 제외 확인</li>
+    <li><strong>Size 판정:</strong> 3변합계 기준 + 중량 기준 → MAX 적용 확인</li>
+    <li><strong>Cool 할증:</strong> Size 80(¥330), Size 100(¥440) + Size 140 초과 확인</li>
+    <li><strong>당일배송:</strong> 표준(¥550) + 오키나와(¥330) 확인</li>
+    <li><strong>할인:</strong> 지산+디지털(-¥170), 회원지산이 일반지산 대체 확인(-¥210)</li>
+  </ul>
+</div>
+
+<footer>
+  <p>⚠️ 참고용 검증 리포트입니다. 실제 청구액과 다를 수 있습니다.</p>
+  <p>© 2025 MUSICUS | Yamato TA-Q-BIN ¥税込 요금 기준</p>
+</footer>
+
+<script>
+// Chart: Scatter - Expected vs Actual Rate
+new Chart(document.getElementById('chart-scatter'), {
+  type: 'scatter',
+  data: {
+    datasets: [{
+      label: 'LLM예상 vs 프로그램',
+      data: [{"x":1060,"y":1060},{"x":1350,"y":1350},{"x":1650,"y":1650},{"x":2170,"y":2170},{"x":2780,"y":2780},{"x":3160,"y":3160},{"x":4480,"y":4480},{"x":5410,"y":5410},{"x":1650,"y":1650},{"x":2167,"y":2167},{"x":4240,"y":4240},{"x":2050,"y":2050},{"x":1650,"y":1650},{"x":1090,"y":1090},{"x":1727,"y":1727},{"x":1530,"y":1530},{"x":1350,"y":1350},{"x":2170,"y":2170},{"x":1350,"y":1350},{"x":1650,"y":1650},{"x":2780,"y":2780},{"x":1650,"y":1650},{"x":2710,"y":2710},{"x":1650,"y":1650},{"x":1650,"y":1650}],
+      backgroundColor: 'rgba(239, 68, 68, 0.7)',
+      pointRadius: 5,
+    }, {
+      label: '완벽 일치 라인',
+      data: [{x:0,y:0},{x:6000,y:6000}],
+      type: 'line',
+      borderColor: '#444',
+      borderDash: [5,5],
+      pointRadius: 0,
+      borderWidth: 1,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { labels: { color: '#aaa', font: { size: 11 } } } },
+    scales: {
+      x: { title: { display: true, text: 'LLM 예상값 (¥)', color: '#888' }, ticks: { color: '#888' }, grid: { color: '#333' } },
+      y: { title: { display: true, text: '프로그램 계산값 (¥)', color: '#888' }, ticks: { color: '#888' }, grid: { color: '#333' } },
+    }
+  }
+});
+
+// Chart: Bar - Per-pkg totals
+new Chart(document.getElementById('chart-bar'), {
+  type: 'bar',
+  data: {
+    labels: ["#1","#2","#3","#4","#5","#6","#7","#8","#9","#10","#11","#12","#13","#14","#15","#16","#17","#18","#19","#20","#21","#22","#23","#24","#25"],
+    datasets: [{
+      label: '개당 합계',
+      data: [1060,1350,1650,2170,2780,3160,4480,5410,1650,2167,4240,2050,1650,1090,1727,1530,1350,2170,1680,2090,2780,2200,3040,1480,1440],
+      backgroundColor: 'rgba(239, 68, 68, 0.6)',
+      borderColor: 'rgba(239, 68, 68, 1)',
+      borderWidth: 1,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { labels: { color: '#aaa', font: { size: 11 } } } },
+    scales: {
+      x: { ticks: { color: '#888', font: { size: 9 } }, grid: { color: '#333' } },
+      y: { ticks: { color: '#888', callback: v => '¥' + v.toLocaleString() }, grid: { color: '#333' } },
+    }
+  }
+});
+
+// Chart: Size distribution
+new Chart(document.getElementById('chart-size-dist'), {
+  type: 'doughnut',
+  data: {
+    labels: ["60","80","100","120","140","160","180","200"],
+    datasets: [{
+      data: [1,5,9,5,2,1,1,1],
+      backgroundColor: ['#ef4444','#f97316','#eab308','#22c55e','#06b6d4','#3b82f6','#8b5cf6','#ec4899'],
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: 'right', labels: { color: '#aaa', font: { size: 11 } } } },
+  }
+});
+
+// Chart: Deviation
+new Chart(document.getElementById('chart-deviation'), {
+  type: 'bar',
+  data: {
+    labels: ["#1","#2","#3","#4","#5","#6","#7","#8","#9","#10","#11","#12","#13","#14","#15","#16","#17","#18","#19","#20","#21","#22","#23","#24","#25"],
+    datasets: [{
+      label: '편차 (LLM - 프로그램)',
+      data: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      backgroundColor: ["rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)","rgba(34,197,94,0.6)"],
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { labels: { color: '#aaa', font: { size: 11 } } } },
+    scales: {
+      x: { ticks: { color: '#888', font: { size: 9 } }, grid: { color: '#333' } },
+      y: { ticks: { color: '#888', callback: v => '¥' + v }, grid: { color: '#333' } },
+    }
+  }
+});
+</script>
+
+</body>
+</html>

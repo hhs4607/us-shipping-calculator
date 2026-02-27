@@ -1,0 +1,37 @@
+{
+  "origin": "kanto",
+  "destination": "kansai",
+  "payment": "cash",
+  "items": [
+    {
+      "name": "frame (L)",
+      "dimensions_mm": "1190*295*190",
+      "weight_kg": 57,
+      "qty": 1
+    },
+    {
+      "name": "wood (L)",
+      "dimensions_mm": "1200*1200*90",
+      "weight_kg": 30,
+      "qty": 4
+    },
+    {
+      "name": "pillarpipe (L)",
+      "dimensions_mm": "985*120*60",
+      "weight_kg": 12,
+      "qty": 1
+    },
+    {
+      "name": "pipe joint (L)",
+      "dimensions_mm": "500*250*150",
+      "weight_kg": 7,
+      "qty": 1
+    },
+    {
+      "name": "Fabric (L)",
+      "dimensions_mm": "1290*540*140",
+      "weight_kg": 30,
+      "qty": 4
+    }
+  ]
+}

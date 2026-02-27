@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>📦 FedEx vs Amazon 배송비 비교 계산기 — MUSICUS</title>
+  <title>📦 배송비 비교 계산기 — MUSICUS</title>
   <meta name="description"
-    content="FedEx Ground vs Amazon Shipping 미국 국내 배송비 비교 계산기. 동일 품목의 두 배송사 비용을 즉시 비교합니다.">
+    content="FedEx Ground vs Amazon Shipping 미국 국내 + 일본 야마토 운송 배송비 계산기.">
   <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -19,8 +19,8 @@
       <div class="header-brand">
         <span class="logo">📦</span>
         <div>
-          <h1 id="header-title">FedEx vs Amazon 배송비 비교 계산기</h1>
-          <div class="subtitle">MUSICUS — US Domestic Shipping Cost Comparator (V5)</div>
+          <h1 id="header-title">배송비 비교 계산기</h1>
+          <div class="subtitle">MUSICUS — Shipping Cost Calculator (V7)</div>
         </div>
       </div>
       <div class="header-actions">
@@ -31,13 +31,77 @@
         <button class="btn" id="btn-load" title="시나리오 불러오기">📂 불러오기</button>
         <button class="btn btn-sm" id="btn-export" title="JSON 내보내기">⬇ Export</button>
         <button class="btn btn-sm" id="btn-import" title="JSON 가져오기">⬆ Import</button>
-        <a href="benchmark.html" class="btn btn-sm btn-benchmark" title="계산기 검증 벤치마크 리포트">📊 벤치마크</a>
+        <a href="benchmark.html" class="btn btn-sm btn-benchmark" title="US 배송비 벤치마크">📊 US 벤치마크</a>
+        <a href="benchmark-yamato.html" class="btn btn-sm btn-benchmark" title="Yamato 벤치마크">📊 JP 벤치마크</a>
       </div>
     </header>
 
-    <!-- ═══ Common Settings ═══ -->
+    <!-- ═══ Shared Items Input (above tabs) ═══ -->
     <section class="card">
-      <div class="card-title"><span class="icon">⚙️</span> 공통 설정</div>
+      <div class="card-title"><span class="icon">📋</span> 품목 입력</div>
+      <div class="table-scroll">
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>품명</th>
+              <th id="th-dim-l">L(mm)</th>
+              <th id="th-dim-w">W(mm)</th>
+              <th id="th-dim-h">H(mm)</th>
+              <th id="th-weight">중량(kg)</th>
+              <th>수량</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="items-tbody"></tbody>
+        </table>
+      </div>
+      <div class="table-actions">
+        <div class="set-selector">
+          <span class="set-label">세트 불러오기:</span>
+          <button class="btn btn-set active" data-set="all" id="btn-set-all">All</button>
+          <button class="btn btn-set" data-set="L" id="btn-set-l">L</button>
+          <button class="btn btn-set" data-set="M" id="btn-set-m">M</button>
+          <button class="btn btn-set" data-set="S" id="btn-set-s">S</button>
+        </div>
+        <div class="items-units">
+          <div class="setting-group setting-group--inline">
+            <label>치수</label>
+            <div class="unit-toggle" id="unit-dim">
+              <button data-value="mm" class="active">mm</button>
+              <button data-value="cm">cm</button>
+              <button data-value="inch">inch</button>
+            </div>
+          </div>
+          <div class="setting-group setting-group--inline">
+            <label>중량</label>
+            <div class="unit-toggle" id="unit-weight">
+              <button data-value="kg" class="active">kg</button>
+              <button data-value="lb">lb</button>
+            </div>
+          </div>
+        </div>
+        <div class="action-buttons">
+          <button class="btn btn-primary" id="btn-add-row">➕ 행 추가</button>
+          <button class="btn" id="btn-reset">🔄 기본값 초기화</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ Tab Navigation ═══ -->
+    <nav class="tab-nav">
+      <button class="tab-btn active" data-tab="us">🇺🇸 US Domestic</button>
+      <button class="tab-btn" data-tab="yamato">🇯🇵 Japan Domestic</button>
+    </nav>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <!-- US TAB: FedEx vs Amazon                                    -->
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <div id="tab-us" class="tab-content active">
+
+    <!-- ═══ US Settings ═══ -->
+    <section class="card">
+      <div class="card-title"><span class="icon">⚙️</span> US 배송 설정</div>
       <div class="settings-grid">
         <div class="setting-group">
           <label for="zone-select">Zone (배송 구간) <span class="tip"
@@ -52,7 +116,6 @@
             <option value="8">Zone 8 — 장거리 (1,801+ mi)</option>
           </select>
         </div>
-
         <div class="setting-group">
           <label for="das-tier">DAS 티어 <span class="tip"
               data-tip="배송지역 할증(Delivery Area Surcharge). 두 배송사에 공통 적용. 각 배송사 내부 DAS 금액은 다릅니다.">ⓘ</span></label>
@@ -62,21 +125,6 @@
             <option value="Extended">Extended</option>
             <option value="Remote">Remote</option>
           </select>
-        </div>
-
-        <div class="setting-group">
-          <label>치수 단위</label>
-          <div class="unit-toggle" id="unit-dim">
-            <button data-value="mm" class="active">mm</button>
-            <button data-value="inch">inch</button>
-          </div>
-        </div>
-        <div class="setting-group">
-          <label>중량 단위</label>
-          <div class="unit-toggle" id="unit-weight">
-            <button data-value="kg" class="active">kg</button>
-            <button data-value="lb">lb</button>
-          </div>
         </div>
       </div>
     </section>
@@ -128,41 +176,6 @@
             </div>
             <div class="carrier-col-note">Residential 할증 없음 (항상 Commercial)</div>
           </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ═══ Items Input ═══ -->
-    <section class="card">
-      <div class="card-title"><span class="icon">📋</span> 품목 입력</div>
-      <div class="table-scroll">
-        <table class="items-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>품명</th>
-              <th id="th-dim-l">L(mm)</th>
-              <th id="th-dim-w">W(mm)</th>
-              <th id="th-dim-h">H(mm)</th>
-              <th id="th-weight">중량(kg)</th>
-              <th>수량</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="items-tbody"></tbody>
-        </table>
-      </div>
-      <div class="table-actions">
-        <div class="set-selector">
-          <span class="set-label">세트 불러오기:</span>
-          <button class="btn btn-set active" data-set="all" id="btn-set-all">All</button>
-          <button class="btn btn-set" data-set="L" id="btn-set-l">L</button>
-          <button class="btn btn-set" data-set="M" id="btn-set-m">M</button>
-          <button class="btn btn-set" data-set="S" id="btn-set-s">S</button>
-        </div>
-        <div class="action-buttons">
-          <button class="btn btn-primary" id="btn-add-row">➕ 행 추가</button>
-          <button class="btn" id="btn-reset">🔄 기본값 초기화</button>
         </div>
       </div>
     </section>
@@ -265,6 +278,141 @@
       </div>
     </section>
 
+    </div><!-- end #tab-us -->
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <!-- YAMATO TAB: Japan Domestic Shipping                        -->
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <div id="tab-yamato" class="tab-content">
+
+    <!-- ═══ Yamato Route Settings ═══ -->
+    <section class="card">
+      <div class="card-title"><span class="icon">⚙️</span> 경로 설정</div>
+      <div class="settings-grid">
+        <div class="setting-group">
+          <label for="ym-origin">출발지 <span class="tip" data-tip="발송 지역을 선택하세요">ⓘ</span></label>
+          <select id="ym-origin"></select>
+        </div>
+        <div class="setting-group">
+          <label for="ym-destination">도착지 <span class="tip" data-tip="배송 도착 지역을 선택하세요">ⓘ</span></label>
+          <select id="ym-destination"></select>
+        </div>
+        <div class="setting-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="ym-same-pref">
+            <span>동일 현내 배송 <span class="tip" data-tip="같은 현(도도부현) 내 배송 시 할인 운임이 적용됩니다. 오키나와 제외.">ⓘ</span></span>
+          </label>
+        </div>
+        <div class="setting-group">
+          <label>결제 방법</label>
+          <div class="unit-toggle" id="ym-payment">
+            <button data-value="cash" class="active">현금</button>
+            <button data-value="cashless">캐시리스</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ Yamato Options ═══ -->
+    <section class="card">
+      <div class="card-title"><span class="icon">🔧</span> 옵션 / 할인</div>
+      <div class="settings-grid">
+        <div class="setting-group">
+          <label for="ym-cool">Cool 서비스 <span class="tip" data-tip="냉장(0~10°C) 또는 냉동(-15°C). 사이즈 120 이하만 가능.">ⓘ</span></label>
+          <select id="ym-cool">
+            <option value="none">없음</option>
+            <option value="chilled">냉장 (0~10°C)</option>
+            <option value="frozen">냉동 (-15°C)</option>
+          </select>
+        </div>
+        <div class="setting-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="ym-sameday">
+            <span>당일 배송 (+¥550) <span class="tip" data-tip="오전 접수 → 당일 오후 배달. 오키나와 +¥330.">ⓘ</span></span>
+          </label>
+        </div>
+        <div class="setting-group ym-discounts">
+          <label>할인 <span class="tip" data-tip="여러 할인을 동시 적용 가능. 회원 지참할인은 일반 지참할인을 대체합니다.">ⓘ</span></label>
+          <div class="discount-checks">
+            <label class="checkbox-label"><input type="checkbox" data-discount="dropoff"><span>지참할인 (-¥110)</span></label>
+            <label class="checkbox-label"><input type="checkbox" data-discount="digital"><span>디지털할인 (-¥60)</span></label>
+            <label class="checkbox-label"><input type="checkbox" data-discount="multi_package"><span>복수구할인 (-¥100)</span></label>
+            <label class="checkbox-label"><input type="checkbox" data-discount="branch_pickup"><span>영업소수취 (-¥60)</span></label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ Yamato Results ═══ -->
+    <section class="card">
+      <div class="card-title"><span class="icon">📊</span> 계산 결과</div>
+      <div class="table-scroll">
+        <table class="compare-table yamato-theme">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>품명</th>
+              <th>L×W×H</th>
+              <th>중량(kg)</th>
+              <th>3변합</th>
+              <th>Size</th>
+              <th>기본운임</th>
+              <th>Cool</th>
+              <th>할인</th>
+              <th>합계/개</th>
+              <th>수량</th>
+              <th>소계</th>
+            </tr>
+          </thead>
+          <tbody id="ym-result-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═══ Yamato Summary ═══ -->
+    <section class="card">
+      <div class="card-title"><span class="icon">💰</span> 요약</div>
+      <div class="table-scroll">
+        <table class="summary-compare-table yamato-theme">
+          <thead>
+            <tr>
+              <th></th>
+              <th class="th-yamato">Yamato TA-Q-BIN</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="row-label">활성 품목</td>
+              <td id="ym-sum-count" class="center-cell">0건 / 0개</td>
+            </tr>
+            <tr>
+              <td class="row-label">기본 운임</td>
+              <td id="ym-sum-base" class="yamato-cell">¥0</td>
+            </tr>
+            <tr>
+              <td class="row-label">Cool 할증</td>
+              <td id="ym-sum-cool" class="yamato-cell">¥0</td>
+            </tr>
+            <tr>
+              <td class="row-label">당일 배송</td>
+              <td id="ym-sum-sameday" class="yamato-cell">¥0</td>
+            </tr>
+            <tr>
+              <td class="row-label">할인 합계</td>
+              <td id="ym-sum-discount" class="yamato-cell discount-amount">¥0</td>
+            </tr>
+            <tr class="grand-total-row">
+              <td class="row-label">총 배송비</td>
+              <td id="ym-sum-grand" class="yamato-cell">¥0</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ym-sum-route" id="ym-sum-route"></div>
+    </section>
+
+    </div><!-- end #tab-yamato -->
+
     <!-- ═══ Footer ═══ -->
     <footer class="footer">
       <p>⚠️ 참고용 계산기입니다. 실제 청구액과 다를 수 있습니다.</p>
@@ -286,8 +434,10 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="js/calculator.js"></script>
   <script src="js/amazon-calculator.js"></script>
+  <script src="js/yamato-calculator.js"></script>
   <script src="js/data-loader.js"></script>
   <script src="js/storage.js"></script>
+  <script src="js/yamato-ui.js"></script>
   <script src="js/ui.js"></script>
 
 </body>

@@ -1,0 +1,43 @@
+{
+  "cool": {
+    "60": 275,
+    "80": 330,
+    "100": 440,
+    "120": 715,
+    "note": "Chilled (0~10°C) or Frozen (-15°C). Max size 120."
+  },
+  "same_day": {
+    "note": "Same-day delivery (+550, +330 for Okinawa)",
+    "standard": 550,
+    "okinawa": 330
+  },
+  "cod": {
+    "note": "Cash on delivery fee by declared value range",
+    "ranges": [
+      {
+        "min": 0,
+        "max": 9999,
+        "fee": 330
+      },
+      {
+        "min": 10000,
+        "max": 29999,
+        "fee": 440
+      },
+      {
+        "min": 30000,
+        "max": 99999,
+        "fee": 660
+      },
+      {
+        "min": 100000,
+        "max": 300000,
+        "fee": 1100
+      }
+    ]
+  },
+  "anonymous": {
+    "note": "Anonymous delivery",
+    "fee": 55
+  }
+}

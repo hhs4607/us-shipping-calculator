@@ -17,3 +17,12 @@ Thumbs.db
 
 # Review docs (local only)
 REVIEW_*.md
+
+# Claude Code
+.claude/
+memory/
+
+# Workspace / build artifacts
+pptx-workspace/
+screenshots/
+test-results/

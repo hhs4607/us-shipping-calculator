@@ -1145,3 +1145,120 @@ th .tip:hover::after {
   padding-top: 12px;
   border-top: 1px solid var(--border);
 }
+
+/* ─── Tab Navigation ─────────────────────────────────────────────── */
+.tab-nav {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.35rem;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-m);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.tab-btn:hover {
+  background: var(--surface2);
+  color: var(--text-s);
+}
+
+.tab-btn.active {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* ─── Yamato Theme (reuses compare-table / summary-compare-table) ── */
+:root {
+  --yamato-color: #ef4444;
+  --yamato-bg: rgba(239, 68, 68, 0.08);
+  --yamato-border: rgba(239, 68, 68, 0.25);
+}
+
+/* Yamato result table: reuse compare-table with red accent */
+.compare-table.yamato-theme thead th {
+  border-bottom: 2px solid var(--yamato-color);
+}
+
+.compare-table.yamato-theme .error-row {
+  color: var(--diff-positive);
+  font-size: 0.75rem;
+  text-align: left !important;
+}
+
+/* Yamato summary header */
+.th-yamato {
+  background: rgba(239, 68, 68, 0.12) !important;
+  color: var(--yamato-color) !important;
+  border-bottom: 2px solid var(--yamato-color) !important;
+}
+
+.summary-compare-table .yamato-cell {
+  color: var(--yamato-color);
+  font-weight: 600;
+}
+
+.summary-compare-table .grand-total-row .yamato-cell {
+  font-size: 1.1rem;
+}
+
+.discount-amount {
+  color: var(--diff-negative) !important;
+}
+
+.ym-sum-route {
+  margin-top: 0.5rem;
+  padding: 0 0.6rem;
+  font-size: 0.7rem;
+  color: var(--text-m);
+}
+
+.discount-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.discount-checks .checkbox-label {
+  font-size: 0.75rem !important;
+}
+
+/* ─── Shared Items Units Row ─────────────────────────────────────── */
+.items-units {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.setting-group--inline {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.4rem !important;
+}
+
+.setting-group--inline label {
+  margin: 0;
+  white-space: nowrap;
+}

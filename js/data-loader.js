@@ -46,9 +46,35 @@ const DataLoader = (() => {
         return Object.keys(CARRIER_PATHS);
     }
 
+    const YAMATO_PATH = 'public/data/2025/yamato';
+
+    async function loadYamatoJSON(filename) {
+        const cacheKey = `yamato/${filename}`;
+        if (_cache[cacheKey]) return _cache[cacheKey];
+        const resp = await fetch(`${YAMATO_PATH}/${filename}`);
+        if (!resp.ok) throw new Error(`Failed to load ${cacheKey}: ${resp.status}`);
+        const data = await resp.json();
+        _cache[cacheKey] = data;
+        return data;
+    }
+
+    async function loadYamato() {
+        const [ratesCash, ratesCashless, ratesIntrapref, zones, surcharges, discounts, defaults, meta] = await Promise.all([
+            loadYamatoJSON('rates-cash.json'),
+            loadYamatoJSON('rates-cashless.json'),
+            loadYamatoJSON('rates-intrapref.json'),
+            loadYamatoJSON('zones.json'),
+            loadYamatoJSON('surcharges.json'),
+            loadYamatoJSON('discounts.json'),
+            loadYamatoJSON('defaults.json'),
+            loadYamatoJSON('meta.json'),
+        ]);
+        return { ratesCash, ratesCashless, ratesIntrapref, zones, surcharges, discounts, defaults, meta };
+    }
+
     function clearCache() {
         _cache = {};
     }
 
-    return { loadJSON, loadAll, loadBoth, getCarriers, clearCache };
+    return { loadJSON, loadAll, loadBoth, loadYamato, getCarriers, clearCache };
 })();

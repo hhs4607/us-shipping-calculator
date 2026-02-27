@@ -1,7 +1,8 @@
 /**
- * UI Controller V5 — FedEx vs Amazon Comparison Mode
- * V5: Always shows both carriers side by side. No carrier toggle.
- * Unified DAS tiers, comparison tables, Chart.js visualizations.
+ * UI Controller V7 — Shared Items + Tab-based Comparison
+ * V7: Items input shared between US and Japan tabs.
+ * US tab: FedEx vs Amazon side-by-side comparison.
+ * Japan tab: Yamato TA-Q-BIN (via YamatoUI module).
  */
 
 const UI = (() => {
@@ -54,6 +55,12 @@ const UI = (() => {
     recalculate();
     renderMeta();
     bindEvents();
+
+    // Initialize Yamato tab, then trigger calculation with shared items
+    if (typeof YamatoUI !== 'undefined') {
+      await YamatoUI.init();
+      YamatoUI.recalculateWithItems(state.items);
+    }
   }
 
   function migrateState(old) {
@@ -174,18 +181,20 @@ const UI = (() => {
     const tbody = document.getElementById('items-tbody');
     tbody.innerHTML = '';
 
-    document.getElementById('th-dim-l').textContent = state.unitDim === 'mm' ? 'L(mm)' : 'L(in)';
-    document.getElementById('th-dim-w').textContent = state.unitDim === 'mm' ? 'W(mm)' : 'W(in)';
-    document.getElementById('th-dim-h').textContent = state.unitDim === 'mm' ? 'H(mm)' : 'H(in)';
+    const dimLabels = { mm: 'mm', cm: 'cm', inch: 'in' };
+    const dl = dimLabels[state.unitDim] || 'mm';
+    document.getElementById('th-dim-l').textContent = `L(${dl})`;
+    document.getElementById('th-dim-w').textContent = `W(${dl})`;
+    document.getElementById('th-dim-h').textContent = `H(${dl})`;
     document.getElementById('th-weight').textContent = state.unitWeight === 'kg' ? '중량(kg)' : '중량(lb)';
 
     state.items.forEach((item, idx) => {
       const tr = document.createElement('tr');
       tr.dataset.id = item.id;
 
-      const displayL = state.unitDim === 'mm' ? item.L_mm : mmToInDisplay(item.L_mm);
-      const displayW = state.unitDim === 'mm' ? item.W_mm : mmToInDisplay(item.W_mm);
-      const displayH = state.unitDim === 'mm' ? item.H_mm : mmToInDisplay(item.H_mm);
+      const displayL = mmToDisplay(item.L_mm);
+      const displayW = mmToDisplay(item.W_mm);
+      const displayH = mmToDisplay(item.H_mm);
       const displayWeight = state.unitWeight === 'kg' ? item.weightKg : round2(item.weightKg * 2.2046);
 
       const dimStep = state.unitDim === 'mm' ? '1' : '0.1';
@@ -213,7 +222,17 @@ const UI = (() => {
     });
   }
 
-  function mmToInDisplay(mm) { return round2(mm / 25.4); }
+  function mmToDisplay(mm) {
+    if (state.unitDim === 'cm') return round2(mm / 10);
+    if (state.unitDim === 'inch') return round2(mm / 25.4);
+    return mm; // mm
+  }
+
+  function displayToMm(val) {
+    if (state.unitDim === 'cm') return Number(val) * 10;
+    if (state.unitDim === 'inch') return Number(val) * 25.4;
+    return Number(val); // mm
+  }
 
   function onItemInput(id, input) {
     const item = state.items.find(i => i.id === id);
@@ -223,9 +242,9 @@ const UI = (() => {
     const val = input.value;
 
     if (field === 'name') item.name = val;
-    else if (field === 'L') item.L_mm = state.unitDim === 'mm' ? Number(val) : Number(val) * 25.4;
-    else if (field === 'W') item.W_mm = state.unitDim === 'mm' ? Number(val) : Number(val) * 25.4;
-    else if (field === 'H') item.H_mm = state.unitDim === 'mm' ? Number(val) : Number(val) * 25.4;
+    else if (field === 'L') item.L_mm = displayToMm(val);
+    else if (field === 'W') item.W_mm = displayToMm(val);
+    else if (field === 'H') item.H_mm = displayToMm(val);
     else if (field === 'weight') item.weightKg = state.unitWeight === 'kg' ? Number(val) : Number(val) / 2.2046;
     else if (field === 'qty') item.qty = Math.max(0, Math.floor(Number(val)));
 
@@ -300,6 +319,11 @@ const UI = (() => {
     renderResults(itemResults);
     renderSummary(fedexResult, amazonResult);
     renderCharts(fedexResult, amazonResult, itemResults);
+
+    // Also trigger Yamato recalculation with shared items
+    if (typeof YamatoUI !== 'undefined' && YamatoUI.recalculateWithItems) {
+      YamatoUI.recalculateWithItems(state.items);
+    }
   }
 
   // ─── Comparison Results Table ───────────────────────────────────
@@ -677,6 +701,17 @@ const UI = (() => {
     document.querySelectorAll('.btn-set').forEach(btn => {
       btn.addEventListener('click', () => loadSet(btn.dataset.set));
     });
+
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tabId = btn.dataset.tab;
+        document.querySelectorAll('.tab-btn').forEach(b =>
+          b.classList.toggle('active', b.dataset.tab === tabId));
+        document.querySelectorAll('.tab-content').forEach(el =>
+          el.classList.toggle('active', el.id === 'tab-' + tabId));
+      });
+    });
   }
 
   // ─── Modals ─────────────────────────────────────────────────────
@@ -774,7 +809,7 @@ const UI = (() => {
     <h3>📖 배송 용어 사전</h3>
 
     <div class="help-section">
-      <h4>📐 중량 · 치수</h4>
+      <h4>🇺🇸 US — 공통 용어</h4>
       <div class="term-row">
         <div class="term-name">DIM Weight<br>(부피중량)</div>
         <div class="term-desc">박스 크기로 환산한 중량입니다.<br><strong>각 변(inch) 올림 후 L × W × H ÷ 139</strong><br>박스가 크고 가벼운 경우, 실제 중량 대신 부피중량이 적용됩니다.</div>
@@ -787,10 +822,6 @@ const UI = (() => {
         <div class="term-name">Girth<br>(둘레)</div>
         <div class="term-desc"><strong>최장변 + 2 × (높이 + 너비)</strong><br>택배 크기를 판정하는 기준입니다. FedEx와 Amazon 모두 같은 공식 사용.</div>
       </div>
-    </div>
-
-    <div class="help-section">
-      <h4>💰 운임 · 할증</h4>
       <div class="term-row">
         <div class="term-name">Zone<br>(배송 구간)</div>
         <div class="term-desc">출발지에서 도착지까지의 <strong>거리에 따른 구간(2~8)</strong>입니다.</div>
@@ -806,7 +837,7 @@ const UI = (() => {
       <div class="term-row">
         <div class="term-name">DAS<br>(배송지역 할증)</div>
         <div class="term-desc">
-          V5에서는 통합 4단계로 비교합니다:<br>
+          통합 4단계로 비교합니다:<br>
           <strong>Delivery Area:</strong> FedEx $4.20/$6.20 | Amazon $4.45<br>
           <strong>Extended:</strong> FedEx $5.25/$8.30 | Amazon $5.55<br>
           <strong>Remote:</strong> FedEx $15.50 | Amazon $16.75
@@ -815,7 +846,7 @@ const UI = (() => {
     </div>
 
     <div class="help-section">
-      <h4>⚠️ FedEx Ground 추가 수수료</h4>
+      <h4>⚠️ US — FedEx Ground 추가 수수료</h4>
       <div class="term-row">
         <div class="term-name">AHS-Dim</div>
         <div class="term-desc">최장변 > 48" / 둘째변 > 30" / L+Girth > 105"<br>Zone별 $28~$38. 최소 청구중량 40lb.</div>
@@ -835,7 +866,7 @@ const UI = (() => {
     </div>
 
     <div class="help-section">
-      <h4>📦 Amazon Shipping 추가 수수료</h4>
+      <h4>📦 US — Amazon Shipping 추가 수수료</h4>
       <div class="term-row">
         <div class="term-name">NonStandard</div>
         <div class="term-desc">최장변 > 37" / 둘째변 > 30" / 셋째변 > 24"<br>Zone그룹별 $11~$14.15</div>
@@ -858,8 +889,44 @@ const UI = (() => {
       </div>
     </div>
 
+    <div class="help-section">
+      <h4>🇯🇵 Japan — 야마토 택배 용어</h4>
+      <div class="term-row">
+        <div class="term-name">3변합<br>(3辺合計)</div>
+        <div class="term-desc"><strong>가로 + 세로 + 높이(cm)</strong>의 합계입니다. 야마토 사이즈 판정의 기준이 됩니다.<br>최대 200cm 초과 시 배송 불가.</div>
+      </div>
+      <div class="term-row">
+        <div class="term-name">Size<br>(사이즈 등급)</div>
+        <div class="term-desc">60/80/100/120/140/160/180/200 등급. <strong>3변합 기준</strong>과 <strong>중량 기준</strong> 중 더 큰 등급이 적용됩니다.<br>예: 3변합 75cm(Size 80) + 중량 8kg(Size 100) → <strong>Size 100</strong> 적용</div>
+      </div>
+      <div class="term-row">
+        <div class="term-name">현내배송<br>(동일 현 배송)</div>
+        <div class="term-desc">같은 도도부현 내 배송 시 적용되는 할인 운임입니다. 오키나와는 제외.</div>
+      </div>
+      <div class="term-row">
+        <div class="term-name">Cool 서비스</div>
+        <div class="term-desc"><strong>냉장(0~10°C)</strong> 또는 <strong>냉동(-15°C)</strong> 택배. Size 120 이하만 가능. 사이즈별 추가 요금 부과.</div>
+      </div>
+      <div class="term-row">
+        <div class="term-name">당일 배송</div>
+        <div class="term-desc">오전 접수 → 당일 오후 배달. 전국 +¥550, 오키나와 +¥330.</div>
+      </div>
+      <div class="term-row">
+        <div class="term-name">할인</div>
+        <div class="term-desc">
+          <strong>지참할인:</strong> 영업소 직접 접수 시 -¥110<br>
+          <strong>디지털할인:</strong> 디지털 송장 사용 시 -¥60<br>
+          <strong>복수구할인:</strong> 2개 이상 동시 발송 시 -¥100<br>
+          <strong>영업소수취:</strong> 영업소 수취 시 -¥60<br>
+          여러 할인 동시 적용 가능.
+        </div>
+      </div>
+    </div>
+
     <div class="tip-box">
-      <strong>💡 참고:</strong> 추가 수수료는 품목당 1종류만 적용됩니다. 우선순위가 높은 것만 부과됩니다.
+      <strong>💡 참고:</strong><br>
+      • US: 추가 수수료는 품목당 1종류만 적용됩니다. 우선순위가 높은 것만 부과.<br>
+      • Japan: 야마토 최대 제한 — 3변합 200cm, 최장변 170cm, 중량 30kg.
     </div>
 
     <div class="close-row">
@@ -877,44 +944,77 @@ const UI = (() => {
   <div class="help-modal">
     <h3>❓ 사용 가이드</h3>
 
-    <div class="step-row">
-      <span class="step-num">1</span>
-      <div class="step-content">
-        <div class="step-title">공통 설정</div>
-        <div class="step-detail">Zone(2~8)과 DAS 티어를 선택합니다. 두 배송사에 동시 적용됩니다.</div>
+    <div class="help-section">
+      <h4>📋 공통 — 품목 입력</h4>
+      <div class="step-row">
+        <span class="step-num">1</span>
+        <div class="step-content">
+          <div class="step-title">품목 입력 (양 탭 공통)</div>
+          <div class="step-detail">상단의 품목 테이블에 제품명, 가로/세로/높이, 중량, 수량을 입력합니다.<br>
+          <strong>세트 버튼(All/L/M/S)</strong>으로 기본 품목을 빠르게 불러올 수 있습니다.<br>
+          <strong>치수 단위(mm/cm/inch)</strong>와 <strong>중량 단위(kg/lb)</strong>를 전환할 수 있습니다.<br>
+          품목은 US 탭과 Japan 탭에서 <strong>동일하게 공유</strong>됩니다.</div>
+        </div>
       </div>
     </div>
 
-    <div class="step-row">
-      <span class="step-num">2</span>
-      <div class="step-content">
-        <div class="step-title">배송사별 설정</div>
-        <div class="step-detail"><strong>FedEx:</strong> 연료할증률(%)을 직접 입력하고, Residential 체크박스를 설정합니다.<br><strong>Amazon:</strong> 경유가격($/갤런)을 선택하면 자동으로 연료할증률이 산정됩니다.</div>
+    <div class="help-section">
+      <h4>🇺🇸 US Domestic — FedEx vs Amazon 비교</h4>
+      <div class="step-row">
+        <span class="step-num">2</span>
+        <div class="step-content">
+          <div class="step-title">US 배송 설정</div>
+          <div class="step-detail"><strong>Zone(2~8)</strong>과 <strong>DAS 티어</strong>를 선택합니다. 두 배송사에 동시 적용됩니다.</div>
+        </div>
+      </div>
+      <div class="step-row">
+        <span class="step-num">3</span>
+        <div class="step-content">
+          <div class="step-title">배송사별 설정</div>
+          <div class="step-detail"><strong>FedEx:</strong> 연료할증률(%)을 직접 입력하고, Residential 체크박스를 설정합니다.<br><strong>Amazon:</strong> 경유가격($/갤런)을 선택하면 자동으로 연료할증률이 산정됩니다.</div>
+        </div>
+      </div>
+      <div class="step-row">
+        <span class="step-num">4</span>
+        <div class="step-content">
+          <div class="step-title">비교 결과 확인</div>
+          <div class="step-detail">동일 품목에 대한 FedEx와 Amazon의 배송비를 나란히 비교합니다.<br>차이 금액과 그래프로 어느 배송사가 유리한지 즉시 확인할 수 있습니다.</div>
+        </div>
       </div>
     </div>
 
-    <div class="step-row">
-      <span class="step-num">3</span>
-      <div class="step-content">
-        <div class="step-title">품목 입력</div>
-        <div class="step-detail">제품명, 가로/세로/높이, 중량, 수량을 입력합니다. 세트 버튼(All/L/M/S)으로 빠르게 불러올 수 있습니다.</div>
+    <div class="help-section">
+      <h4>🇯🇵 Japan Domestic — 야마토 택배</h4>
+      <div class="step-row">
+        <span class="step-num">5</span>
+        <div class="step-content">
+          <div class="step-title">경로 설정</div>
+          <div class="step-detail"><strong>출발지</strong>와 <strong>도착지</strong> 지역을 선택합니다. <strong>동일 현내 배송</strong> 체크 시 할인 운임이 적용됩니다.<br>결제 방법(현금/캐시리스)에 따라 운임이 달라집니다.</div>
+        </div>
       </div>
-    </div>
-
-    <div class="step-row">
-      <span class="step-num">4</span>
-      <div class="step-content">
-        <div class="step-title">비교 결과 확인</div>
-        <div class="step-detail">동일 품목에 대한 FedEx와 Amazon의 배송비를 나란히 비교합니다. 차이 금액과 그래프로 어느 배송사가 유리한지 즉시 확인할 수 있습니다.</div>
+      <div class="step-row">
+        <span class="step-num">6</span>
+        <div class="step-content">
+          <div class="step-title">옵션 / 할인</div>
+          <div class="step-detail"><strong>Cool 서비스:</strong> 냉장/냉동 택배 (Size 120 이하만 가능).<br><strong>당일 배송:</strong> +¥550 추가.<br><strong>할인:</strong> 지참할인, 디지털할인, 복수구할인, 영업소수취 — 중복 적용 가능.</div>
+        </div>
+      </div>
+      <div class="step-row">
+        <span class="step-num">7</span>
+        <div class="step-content">
+          <div class="step-title">계산 결과 확인</div>
+          <div class="step-detail">각 품목의 사이즈 등급 판정, 기본운임, 할증, 할인, 합계를 확인합니다.<br>야마토 제한(3변합 200cm, 최장변 170cm, 중량 30kg) 초과 품목은 에러로 표시됩니다.</div>
+        </div>
       </div>
     </div>
 
     <div class="tip-box">
       <strong>💡 팁:</strong><br>
-      • <strong>차이 컬럼:</strong> 양수(빨강) = Amazon이 비쌈, 음수(초록) = Amazon이 저렴<br>
+      • <strong>US 차이 컬럼:</strong> 양수(빨강) = Amazon이 비쌈, 음수(초록) = Amazon이 저렴<br>
+      • <strong>품목 공유:</strong> 품목을 변경하면 US와 Japan 결과가 모두 자동 업데이트됩니다.<br>
       • <strong>💾 저장</strong>으로 시나리오를 로컬에 저장하고, <strong>🔗 공유</strong>로 URL을 복사할 수 있습니다.<br>
       • <strong>⬇ Export</strong>로 JSON 파일을 내보내고, <strong>⬆ Import</strong>로 불러올 수 있습니다.<br>
-      • 각 설정과 결과 컬럼의 <strong>ⓘ</strong> 아이콘에 마우스를 올리면 용어 설명을 볼 수 있습니다.
+      • 각 설정의 <strong>ⓘ</strong> 아이콘에 마우스를 올리면 용어 설명을 볼 수 있습니다.
     </div>
 
     <div class="close-row">
@@ -973,8 +1073,12 @@ const UI = (() => {
 
   // ─── Public API ─────────────────────────────────────────────────
 
+  function getItems() {
+    return state ? state.items : [];
+  }
+
   return {
-    init, addRow, deleteRow, duplicateRow,
+    init, addRow, deleteRow, duplicateRow, getItems,
     doSave, doLoad, doDelete, closeModal, showToast,
     showGlossaryModal, showGuideModal,
   };

@@ -1,0 +1,32 @@
+{
+  "dropoff": {
+    "name_ja": "持込割",
+    "name_en": "Drop-off discount",
+    "amount": -110,
+    "note": "Drop off at sales office, PUDO, convenience store, or designated shop"
+  },
+  "member_dropoff": {
+    "name_ja": "クロネコメンバーズ持込割",
+    "name_en": "Member drop-off discount",
+    "amount": -150,
+    "note": "Kuroneko Members drop-off (replaces standard drop-off)"
+  },
+  "digital": {
+    "name_ja": "デジタル割",
+    "name_en": "Digital label discount",
+    "amount": -60,
+    "note": "Digital shipping label"
+  },
+  "multi_package": {
+    "name_ja": "複数口割引",
+    "name_en": "Multi-package discount",
+    "amount": -100,
+    "note": "Multiple packages to same destination"
+  },
+  "branch_pickup": {
+    "name_ja": "営業所受取割引",
+    "name_en": "Branch pickup discount",
+    "amount": -60,
+    "note": "Recipient picks up at sales office"
+  }
+}
