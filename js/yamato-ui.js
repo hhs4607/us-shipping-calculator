@@ -23,6 +23,12 @@ const YamatoUI = (() => {
     return Math.round(n).toLocaleString('ja-JP');
   }
 
+  const DISCOUNT_KO = {
+    dropoff: '지참할인', digital: '디지털할인',
+    multi_package: '복수구할인', branch_pickup: '영업소수취',
+    member_dropoff: '회원지참할인',
+  };
+
   function toast(msg, type) {
     if (typeof UI !== 'undefined' && UI.showToast) {
       UI.showToast(msg, type);
@@ -142,12 +148,59 @@ const YamatoUI = (() => {
         tr.innerHTML = `
           <td>${idx + 1}</td>
           <td class="cell-name">${escHtml(line.name)}</td>
-          <td colspan="10" class="error-row">\u26a0\ufe0f ${escHtml(line.errorReason)}</td>
+          <td colspan="11" class="error-row">\u26a0\ufe0f ${escHtml(line.errorReason)}</td>
         `;
       } else {
-        const coolStr = line.coolSurcharge > 0 ? '\u00a5' + fmtJpy(line.coolSurcharge) : '-';
-        const discountStr = line.discountTotal < 0 ? '\u00a5' + fmtJpy(line.discountTotal) : '-';
         const sizeLabel = line.appliedSize + (line.isIntrapref ? ' 현내' : '');
+
+        // ── Rationale tags (collected into an array) ──
+        const tags = [];
+
+        // 1) Size determination — always show both tiers, highlight winner
+        const sumTip = escHtml(`3변합 ${line.threeSideSum}cm → Size ${line.sumTier}`);
+        const wgtTip = escHtml(`중량 ${line.weightKg}kg → Size ${line.weightTier}`);
+
+        if (line.sumTier > line.weightTier) {
+          // Sum wins
+          tags.push(`<span class="ym-tag ym-tag--sum" title="${sumTip}">3변합 ${line.sumTier}</span>`);
+          tags.push(`<span class="ym-tag ym-tag--dim" title="${wgtTip}">중량 ${line.weightTier}</span>`);
+        } else if (line.weightTier > line.sumTier) {
+          // Weight wins
+          tags.push(`<span class="ym-tag ym-tag--dim" title="${sumTip}">3변합 ${line.sumTier}</span>`);
+          tags.push(`<span class="ym-tag ym-tag--weight" title="${wgtTip}">중량▲ ${line.weightTier}</span>`);
+        } else {
+          // Equal — both neutral
+          tags.push(`<span class="ym-tag ym-tag--equal" title="${sumTip}">3변합 ${line.sumTier}</span>`);
+          tags.push(`<span class="ym-tag ym-tag--equal" title="${wgtTip}">중량 ${line.weightTier}</span>`);
+        }
+
+        // 2) Cool error
+        if (line.coolError) {
+          tags.push(`<span class="ym-tag ym-tag--cool-err" title="${escHtml(`Size ${line.appliedSize} > 120: Cool 불가`)}">Cool불가</span>`);
+        }
+
+        // 3) Discount breakdown
+        line.discountDetails.forEach(d => {
+          const label = DISCOUNT_KO[d.key] || d.name;
+          tags.push(`<span class="ym-tag ym-tag--discount">${escHtml(label)} \u00a5${fmtJpy(d.amount)}</span>`);
+        });
+
+        const rationaleHtml = tags.join(' ');
+
+        // Cool cell
+        let coolHtml;
+        if (line.coolError) {
+          coolHtml = `<span class="ym-cool-error">\u2717</span>`;
+        } else if (line.coolSurcharge > 0) {
+          coolHtml = `<span class="ym-cool-tag">+\u00a5${fmtJpy(line.coolSurcharge)}</span>`;
+        } else {
+          coolHtml = '-';
+        }
+
+        // Discount cell
+        const discountHtml = line.discountTotal < 0
+          ? `<span class="ym-discount-tag">\u00a5${fmtJpy(line.discountTotal)}</span>`
+          : '-';
 
         tr.innerHTML = `
           <td>${idx + 1}</td>
@@ -156,9 +209,10 @@ const YamatoUI = (() => {
           <td>${line.weightKg}</td>
           <td>${line.threeSideSum}</td>
           <td><strong>${sizeLabel}</strong></td>
+          <td class="ym-rationale-cell">${rationaleHtml}</td>
           <td>\u00a5${fmtJpy(line.baseRate)}</td>
-          <td>${coolStr}</td>
-          <td>${discountStr}</td>
+          <td>${coolHtml}</td>
+          <td>${discountHtml}</td>
           <td><strong>\u00a5${fmtJpy(line.perPkgTotal)}</strong></td>
           <td>${line.qty}</td>
           <td><strong>\u00a5${fmtJpy(line.lineTotal)}</strong></td>

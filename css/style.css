@@ -1235,6 +1235,72 @@ th .tip:hover::after {
   color: var(--text-m);
 }
 
+/* ─── Yamato Rationale Tags ──────────────────────────────────────── */
+.ym-rationale-cell {
+  text-align: left !important;
+  white-space: nowrap;
+}
+
+.ym-tag {
+  display: inline-block;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid var(--border);
+  vertical-align: middle;
+  cursor: help;
+  margin-right: 0.15rem;
+}
+
+.ym-tag--sum {
+  color: #8c8;
+  border-color: #4a4;
+}
+
+.ym-tag--weight {
+  color: #db8;
+  border-color: #a84;
+}
+
+.ym-tag--dim {
+  color: #666;
+  border-color: #444;
+  opacity: 0.6;
+}
+
+.ym-tag--equal {
+  color: #bbb;
+  border-color: #777;
+}
+
+.ym-tag--cool-err {
+  color: #f77;
+  border-color: #c44;
+}
+
+.ym-tag--discount {
+  color: #9bd;
+  border-color: #579;
+  cursor: default;
+}
+
+.ym-cool-tag {
+  color: #7cb3f7;
+  font-weight: 600;
+}
+
+.ym-cool-error {
+  color: #f77;
+  font-weight: 600;
+}
+
+.ym-discount-tag {
+  color: var(--diff-negative);
+  font-weight: 600;
+}
+
 .discount-checks {
   display: flex;
   flex-direction: column;
