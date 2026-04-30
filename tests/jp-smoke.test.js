@@ -158,7 +158,7 @@ async function run() {
   const sgSizeCell = (probe.cells || [])[3] || '';
   const sgTotalCell = (probe.cells || [])[6] || '';
   assert(/(170|180|200|220|240|260)/.test(sgSizeCell), 'Sagawa large size assigned (got cell="' + sgSizeCell + '")');
-  assert(/L/.test(sgSizeCell), 'Sagawa large-tier badge shown');
+  assert(/대형/.test(sgSizeCell), 'Sagawa large-tier badge shown');
   assert(/¥/.test(sgTotalCell), 'Sagawa total rendered alongside Yamato error');
 
   console.log('\n[12] Reset returns to default items');

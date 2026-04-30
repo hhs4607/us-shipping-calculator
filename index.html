@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>📦 배송비 비교 계산기 — MUSICUS</title>
+  <title>📦 배송비 비교 계산기</title>
   <meta name="description"
-    content="FedEx Ground vs Amazon Shipping 미국 국내 + 일본 야마토 운송 배송비 계산기.">
+    content="미국(FedEx vs Amazon) + 일본(야마토 vs 사가와) 배송비 비교 계산기.">
   <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -20,7 +20,7 @@
         <span class="logo">📦</span>
         <div>
           <h1 id="header-title">배송비 비교 계산기</h1>
-          <div class="subtitle">MUSICUS — Shipping Cost Calculator (V7)</div>
+          <div class="subtitle">미국(FedEx vs Amazon) · 일본(야마토 vs 사가와)</div>
         </div>
       </div>
       <div class="header-actions">
@@ -290,7 +290,7 @@
       <div class="card-title"><span class="icon">⚙️</span> JP 경로 설정 (공통)</div>
       <div class="settings-grid">
         <div class="setting-group">
-          <label for="jp-origin">출발지 <span class="tip" data-tip="발송 지역. Sagawa 13지역 기준 (Yamato는 北/南九州→九州, 東海→中部 자동 매핑).">ⓘ</span></label>
+          <label for="jp-origin">출발지 <span class="tip" data-tip="발송 지역. 사가와 13지역 기준이며, 야마토는 북규슈/남규슈→규슈, 도카이→주부로 자동 매핑됩니다.">ⓘ</span></label>
           <select id="jp-origin"></select>
         </div>
         <div class="setting-group">
@@ -304,7 +304,7 @@
           </label>
         </div>
         <div class="setting-group">
-          <label for="jp-cool">Cool 서비스 (공통) <span class="tip" data-tip="냉장(0~10°C) 또는 냉동(-15°C). Yamato Size≤120, Sagawa Size≤140까지 가능.">ⓘ</span></label>
+          <label for="jp-cool">냉장/냉동 배송 (공통) <span class="tip" data-tip="냉장(0~10°C) 또는 냉동(-15°C). 야마토 Size≤120, 사가와 Size≤140까지 가능.">ⓘ</span></label>
           <select id="jp-cool">
             <option value="none">없음</option>
             <option value="chilled">냉장 (0~10°C)</option>
@@ -319,7 +319,7 @@
       <div class="card-title"><span class="icon">🚚</span> 배송사별 설정</div>
       <div class="carrier-settings-row">
         <div class="carrier-col yamato-col">
-          <div class="carrier-col-title">Yamato TA-Q-BIN</div>
+          <div class="carrier-col-title">야마토 택배</div>
           <div class="carrier-col-body">
             <div class="setting-group">
               <label>결제 방법</label>
@@ -331,7 +331,7 @@
             <div class="setting-group">
               <label class="checkbox-label">
                 <input type="checkbox" id="ym-sameday">
-                <span>당일 배송 (+¥550) <span class="tip" data-tip="오전 접수→당일 오후 배달. 오키나와 +¥330. Yamato 전용.">ⓘ</span></span>
+                <span>당일 배송 (+¥550) <span class="tip" data-tip="오전 접수 → 당일 오후 배달. 오키나와 +¥330. 야마토 전용 옵션입니다.">ⓘ</span></span>
               </label>
             </div>
             <div class="setting-group ym-discounts">
@@ -346,7 +346,7 @@
           </div>
         </div>
         <div class="carrier-col sagawa-col">
-          <div class="carrier-col-title">Sagawa 飛脚宅配便</div>
+          <div class="carrier-col-title">사가와 택배</div>
           <div class="carrier-col-body">
             <div class="setting-group">
               <label class="checkbox-label">
@@ -355,9 +355,9 @@
               </label>
             </div>
             <div class="carrier-col-note">
-              사이즈 60–160: 飛脚宅配便 (≤160cm/≤30kg)<br>
-              사이즈 170–260: ラージサイズ (≤260cm/≤50kg)<br>
-              30~40kg 중량할증 +¥270, 40~50kg +¥540
+              사이즈 60–160: 일반 택배 (3변합 ≤160cm, ≤30kg)<br>
+              사이즈 170–260: 대형 택배 (3변합 ≤260cm, ≤50kg)<br>
+              30~40kg 중량 할증 +¥270, 40~50kg +¥540
             </div>
           </div>
         </div>
@@ -366,27 +366,27 @@
 
     <!-- ═══ JP Comparison Results ═══ -->
     <section class="card">
-      <div class="card-title"><span class="icon">📊</span> 비교 결과 (Yamato vs Sagawa)</div>
+      <div class="card-title"><span class="icon">📊</span> 비교 결과 (야마토 vs 사가와)</div>
       <div class="table-scroll">
         <table class="compare-table jp-theme">
           <thead>
             <tr>
               <th rowspan="2">#</th>
               <th rowspan="2">품명</th>
-              <th colspan="4" class="th-yamato">Yamato TA-Q-BIN</th>
-              <th colspan="4" class="th-sagawa">Sagawa 飛脚宅配便</th>
+              <th colspan="4" class="th-yamato">야마토 택배</th>
+              <th colspan="4" class="th-sagawa">사가와 택배</th>
               <th rowspan="2">차이</th>
               <th rowspan="2">수량</th>
             </tr>
             <tr>
-              <th class="th-yamato-sub">Size</th>
+              <th class="th-yamato-sub">사이즈</th>
               <th class="th-yamato-sub">기본운임</th>
-              <th class="th-yamato-sub">근거/할인</th>
-              <th class="th-yamato-sub">합계/개</th>
-              <th class="th-sagawa-sub">Size</th>
+              <th class="th-yamato-sub">옵션/할인</th>
+              <th class="th-yamato-sub">개당 합계</th>
+              <th class="th-sagawa-sub">사이즈</th>
               <th class="th-sagawa-sub">기본운임</th>
-              <th class="th-sagawa-sub">근거/할증</th>
-              <th class="th-sagawa-sub">합계/개</th>
+              <th class="th-sagawa-sub">옵션/할증</th>
+              <th class="th-sagawa-sub">개당 합계</th>
             </tr>
           </thead>
           <tbody id="jp-result-tbody"></tbody>
@@ -402,9 +402,9 @@
           <thead>
             <tr>
               <th></th>
-              <th class="th-yamato">Yamato</th>
-              <th class="th-sagawa">Sagawa</th>
-              <th>차이 (Sagawa−Yamato)</th>
+              <th class="th-yamato">야마토</th>
+              <th class="th-sagawa">사가와</th>
+              <th>차이 (사가와−야마토)</th>
             </tr>
           </thead>
           <tbody>
@@ -419,19 +419,19 @@
               <td id="jp-sum-diff-base" class="diff-cell"></td>
             </tr>
             <tr>
-              <td class="row-label">Cool 할증</td>
+              <td class="row-label">냉장/냉동 할증</td>
               <td id="jp-sum-ym-cool" class="yamato-cell">-</td>
               <td id="jp-sum-sg-cool" class="sagawa-cell">-</td>
               <td id="jp-sum-diff-cool" class="diff-cell"></td>
             </tr>
             <tr>
-              <td class="row-label">중량 할증 (Sagawa)</td>
+              <td class="row-label">중량 할증 (사가와)</td>
               <td id="jp-sum-ym-weight" class="yamato-cell">-</td>
               <td id="jp-sum-sg-weight" class="sagawa-cell">-</td>
               <td id="jp-sum-diff-weight" class="diff-cell"></td>
             </tr>
             <tr>
-              <td class="row-label">당일 배송 (Yamato)</td>
+              <td class="row-label">당일 배송 (야마토)</td>
               <td id="jp-sum-ym-sameday" class="yamato-cell">-</td>
               <td id="jp-sum-sg-sameday" class="sagawa-cell">-</td>
               <td id="jp-sum-diff-sameday" class="diff-cell"></td>
@@ -459,7 +459,7 @@
       <div class="card-title"><span class="icon">📈</span> 비용 비교 그래프</div>
       <div class="chart-grid">
         <div class="chart-box">
-          <div class="chart-box-title">품목별 비용 비교 (Yamato vs Sagawa)</div>
+          <div class="chart-box-title">품목별 비용 비교 (야마토 vs 사가와)</div>
           <canvas id="jp-chart-item-compare"></canvas>
         </div>
         <div class="chart-box">
@@ -475,7 +475,6 @@
     <footer class="footer">
       <p>⚠️ 참고용 계산기입니다. 실제 청구액과 다를 수 있습니다.</p>
       <p id="meta-info"></p>
-      <p>© 2025 MUSICUS</p>
     </footer>
 
   </div>

@@ -11,7 +11,7 @@
     },
     "max_three_side_cm": 140,
     "max_weight_kg": 30,
-    "note": "飛脚クール便 surcharge added on top of base rate. Refrigerated 2-10°C or frozen -15°C, same price. Service unavailable above 140-size."
+    "note": "Cool surcharge added on top of base rate. Refrigerated 2-10°C or frozen -15°C, same price. Service unavailable above 140-size."
   },
   "weight_over_30kg": {
     "30_to_40_kg": 270,
@@ -26,6 +26,6 @@
     "note": "中継料 (transit fee) applies for some remote islands beyond posted rate matrix; varies by destination."
   },
   "fuel": {
-    "note": "Domestic Hikyaku Takuhaibin has no separate fuel surcharge — already included in base rate. International (飛脚国際宅配便) is 18% as of 2024-10."
+    "note": "Domestic Sagawa parcel has no separate fuel surcharge — already included in base rate. International parcel is 18% as of 2024-10."
   }
 }

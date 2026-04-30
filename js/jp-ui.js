@@ -1,6 +1,6 @@
 /**
  * JP UI Controller — Japan Domestic Shipping Tab
- * V8: Side-by-side comparison of Yamato TA-Q-BIN vs Sagawa Hikyaku Takuhaibin.
+ * V8: Side-by-side comparison of Yamato vs Sagawa.
  *
  * Origin/Destination selector uses Sagawa's 13-region split (more granular).
  * For Yamato calls, regions map down via SAGAWA_TO_YAMATO_REGION (kita_kyushu,
@@ -94,7 +94,9 @@ const JpUI = (() => {
       zones.forEach(z => {
         const opt = document.createElement('option');
         opt.value = z.id;
-        opt.textContent = `${z.name_ja} (${z.name_en})`;
+        const ko = z.name_ko || z.name_en || z.id;
+        const en = z.name_en ? ` (${z.name_en})` : '';
+        opt.textContent = ko + en;
         sel.appendChild(opt);
       });
     });
@@ -281,12 +283,12 @@ const JpUI = (() => {
       `;
     } else {
       const tier = line.serviceTier === 'large'
-        ? '<span class="sg-tag sg-tag--large" title="飛脚ラージサイズ">L</span>'
-        : '<span class="sg-tag sg-tag--std" title="飛脚宅配便">S</span>';
+        ? '<span class="sg-tag sg-tag--large" title="대형 택배 (170~260)">대형</span>'
+        : '<span class="sg-tag sg-tag--std" title="일반 택배 (60~160)">일반</span>';
       const sizeLabel = `${line.appliedSize} ${tier}`;
       if (line.coolError) tags.push(`<span class="sg-tag sg-tag--cool-err">Cool불가</span>`);
       if (line.weightSurcharge > 0) tags.push(`<span class="sg-tag sg-tag--weight">중량할증 +¥${fmtJpy(line.weightSurcharge)}</span>`);
-      if (line.coolSurcharge > 0) tags.push(`<span class="sg-tag sg-tag--cool">Cool +¥${fmtJpy(line.coolSurcharge)}</span>`);
+      if (line.coolSurcharge > 0) tags.push(`<span class="sg-tag sg-tag--cool">냉장/냉동 +¥${fmtJpy(line.coolSurcharge)}</span>`);
       if (line.branchDiscount < 0) tags.push(`<span class="sg-tag sg-tag--discount">영업소반입 ¥${fmtJpy(line.branchDiscount)}</span>`);
 
       return `
@@ -318,9 +320,11 @@ const JpUI = (() => {
     const orig = zones.find(z => z.id === state.origin);
     const dest = zones.find(z => z.id === state.destination);
     const payLabel = state.ymPayment === 'cash' ? '현금' : '캐시리스';
-    const samePrefLabel = state.samePrefecture ? ' | 현내배송' : '';
+    const samePrefLabel = state.samePrefecture ? ' | 현내 배송' : '';
+    const orgName = orig?.name_ko || orig?.name_en || orig?.id || '';
+    const destName = dest?.name_ko || dest?.name_en || dest?.id || '';
     document.getElementById('jp-sum-route').textContent =
-      `${orig?.name_ja || ''} → ${dest?.name_ja || ''} | Yamato ${payLabel}${samePrefLabel}`;
+      `${orgName} → ${destName} | 야마토 ${payLabel}${samePrefLabel}`;
   }
 
   function setRow(key, ymVal, sgVal) {
@@ -376,14 +380,14 @@ const JpUI = (() => {
         labels,
         datasets: [
           {
-            label: 'Yamato TA-Q-BIN',
+            label: '야마토 택배',
             data: ymTotals,
             backgroundColor: 'rgba(239, 68, 68, 0.7)',
             borderColor: 'rgba(239, 68, 68, 1)',
             borderWidth: 1,
           },
           {
-            label: 'Sagawa 飛脚宅配便',
+            label: '사가와 택배',
             data: sgTotals,
             backgroundColor: 'rgba(59, 130, 246, 0.7)',
             borderColor: 'rgba(59, 130, 246, 1)',
@@ -431,7 +435,7 @@ const JpUI = (() => {
     chartCostBreakdown = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: ['Yamato TA-Q-BIN', 'Sagawa 飛脚宅配便'],
+        labels: ['야마토 택배', '사가와 택배'],
         datasets: [
           {
             label: '기본 운임',
@@ -439,22 +443,22 @@ const JpUI = (() => {
             backgroundColor: ['rgba(239, 68, 68, 0.6)', 'rgba(59, 130, 246, 0.6)'],
           },
           {
-            label: 'Cool 할증',
+            label: '냉장/냉동 할증',
             data: [ymCool, sgCool],
             backgroundColor: ['rgba(124, 179, 247, 0.6)', 'rgba(124, 179, 247, 0.6)'],
           },
           {
-            label: '중량 할증 (Sagawa)',
+            label: '중량 할증 (사가와 전용)',
             data: [0, sgWeight],
             backgroundColor: ['rgba(0,0,0,0)', 'rgba(251, 191, 36, 0.6)'],
           },
           {
-            label: '당일 배송 (Yamato)',
+            label: '당일 배송 (야마토 전용)',
             data: [ymSameday, 0],
             backgroundColor: ['rgba(168, 85, 247, 0.6)', 'rgba(0,0,0,0)'],
           },
           {
-            label: '할인 (음수)',
+            label: '할인 합계',
             data: [ymDiscount, sgDiscount],
             backgroundColor: ['rgba(34, 197, 94, 0.6)', 'rgba(34, 197, 94, 0.6)'],
           },
