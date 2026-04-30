@@ -1,6 +1,6 @@
 {
-  "service": "Yamato Transport TA-Q-BIN",
-  "service_ja": "ヤマト運輸 宅急便",
+  "service": "Yamato Parcel",
+  "service_ko": "야마토 택배",
   "country": "JP",
   "currency": "JPY",
   "year": 2025,
