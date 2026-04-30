@@ -91,7 +91,7 @@
     <!-- ═══ Tab Navigation ═══ -->
     <nav class="tab-nav">
       <button class="tab-btn active" data-tab="us">🇺🇸 US Domestic</button>
-      <button class="tab-btn" data-tab="yamato">🇯🇵 Japan Domestic</button>
+      <button class="tab-btn" data-tab="jp">🇯🇵 Japan Domestic</button>
     </nav>
 
     <!-- ════════════════════════════════════════════════════════════ -->
@@ -281,138 +281,180 @@
     </div><!-- end #tab-us -->
 
     <!-- ════════════════════════════════════════════════════════════ -->
-    <!-- YAMATO TAB: Japan Domestic Shipping                        -->
+    <!-- JP TAB: Yamato vs Sagawa side-by-side                       -->
     <!-- ════════════════════════════════════════════════════════════ -->
-    <div id="tab-yamato" class="tab-content">
+    <div id="tab-jp" class="tab-content">
 
-    <!-- ═══ Yamato Route Settings ═══ -->
+    <!-- ═══ JP Route Settings (shared) ═══ -->
     <section class="card">
-      <div class="card-title"><span class="icon">⚙️</span> 경로 설정</div>
+      <div class="card-title"><span class="icon">⚙️</span> JP 경로 설정 (공통)</div>
       <div class="settings-grid">
         <div class="setting-group">
-          <label for="ym-origin">출발지 <span class="tip" data-tip="발송 지역을 선택하세요">ⓘ</span></label>
-          <select id="ym-origin"></select>
+          <label for="jp-origin">출발지 <span class="tip" data-tip="발송 지역. Sagawa 13지역 기준 (Yamato는 北/南九州→九州, 東海→中部 자동 매핑).">ⓘ</span></label>
+          <select id="jp-origin"></select>
         </div>
         <div class="setting-group">
-          <label for="ym-destination">도착지 <span class="tip" data-tip="배송 도착 지역을 선택하세요">ⓘ</span></label>
-          <select id="ym-destination"></select>
+          <label for="jp-destination">도착지 <span class="tip" data-tip="배송 도착 지역">ⓘ</span></label>
+          <select id="jp-destination"></select>
         </div>
         <div class="setting-group">
           <label class="checkbox-label">
-            <input type="checkbox" id="ym-same-pref">
-            <span>동일 현내 배송 <span class="tip" data-tip="같은 현(도도부현) 내 배송 시 할인 운임이 적용됩니다. 오키나와 제외.">ⓘ</span></span>
+            <input type="checkbox" id="jp-same-pref">
+            <span>동일 현내 배송 <span class="tip" data-tip="Yamato 전용: 같은 현 내 배송 시 할인 운임. Sagawa는 별도 할인 없음 (표준 요율 적용). 오키나와 제외.">ⓘ</span></span>
           </label>
         </div>
         <div class="setting-group">
-          <label>결제 방법</label>
-          <div class="unit-toggle" id="ym-payment">
-            <button data-value="cash" class="active">현금</button>
-            <button data-value="cashless">캐시리스</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ═══ Yamato Options ═══ -->
-    <section class="card">
-      <div class="card-title"><span class="icon">🔧</span> 옵션 / 할인</div>
-      <div class="settings-grid">
-        <div class="setting-group">
-          <label for="ym-cool">Cool 서비스 <span class="tip" data-tip="냉장(0~10°C) 또는 냉동(-15°C). 사이즈 120 이하만 가능.">ⓘ</span></label>
-          <select id="ym-cool">
+          <label for="jp-cool">Cool 서비스 (공통) <span class="tip" data-tip="냉장(0~10°C) 또는 냉동(-15°C). Yamato Size≤120, Sagawa Size≤140까지 가능.">ⓘ</span></label>
+          <select id="jp-cool">
             <option value="none">없음</option>
             <option value="chilled">냉장 (0~10°C)</option>
             <option value="frozen">냉동 (-15°C)</option>
           </select>
         </div>
-        <div class="setting-group">
-          <label class="checkbox-label">
-            <input type="checkbox" id="ym-sameday">
-            <span>당일 배송 (+¥550) <span class="tip" data-tip="오전 접수 → 당일 오후 배달. 오키나와 +¥330.">ⓘ</span></span>
-          </label>
+      </div>
+    </section>
+
+    <!-- ═══ Carrier-specific JP settings ═══ -->
+    <section class="card">
+      <div class="card-title"><span class="icon">🚚</span> 배송사별 설정</div>
+      <div class="carrier-settings-row">
+        <div class="carrier-col yamato-col">
+          <div class="carrier-col-title">Yamato TA-Q-BIN</div>
+          <div class="carrier-col-body">
+            <div class="setting-group">
+              <label>결제 방법</label>
+              <div class="unit-toggle" id="ym-payment">
+                <button data-value="cash" class="active">현금</button>
+                <button data-value="cashless">캐시리스</button>
+              </div>
+            </div>
+            <div class="setting-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="ym-sameday">
+                <span>당일 배송 (+¥550) <span class="tip" data-tip="오전 접수→당일 오후 배달. 오키나와 +¥330. Yamato 전용.">ⓘ</span></span>
+              </label>
+            </div>
+            <div class="setting-group ym-discounts">
+              <label>할인 (중복 적용)</label>
+              <div class="discount-checks">
+                <label class="checkbox-label"><input type="checkbox" data-discount="dropoff"><span>지참할인 (-¥110)</span></label>
+                <label class="checkbox-label"><input type="checkbox" data-discount="digital"><span>디지털할인 (-¥60)</span></label>
+                <label class="checkbox-label"><input type="checkbox" data-discount="multi_package"><span>복수구할인 (-¥100)</span></label>
+                <label class="checkbox-label"><input type="checkbox" data-discount="branch_pickup"><span>영업소수취 (-¥60)</span></label>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="setting-group ym-discounts">
-          <label>할인 <span class="tip" data-tip="여러 할인을 동시 적용 가능. 회원 지참할인은 일반 지참할인을 대체합니다.">ⓘ</span></label>
-          <div class="discount-checks">
-            <label class="checkbox-label"><input type="checkbox" data-discount="dropoff"><span>지참할인 (-¥110)</span></label>
-            <label class="checkbox-label"><input type="checkbox" data-discount="digital"><span>디지털할인 (-¥60)</span></label>
-            <label class="checkbox-label"><input type="checkbox" data-discount="multi_package"><span>복수구할인 (-¥100)</span></label>
-            <label class="checkbox-label"><input type="checkbox" data-discount="branch_pickup"><span>영업소수취 (-¥60)</span></label>
+        <div class="carrier-col sagawa-col">
+          <div class="carrier-col-title">Sagawa 飛脚宅配便</div>
+          <div class="carrier-col-body">
+            <div class="setting-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="sg-branch">
+                <span>영업소 반입 (-¥100) <span class="tip" data-tip="사가와 영업소 직접 반입 시 1개당 ¥100 할인. 계약운임/대금인환은 제외.">ⓘ</span></span>
+              </label>
+            </div>
+            <div class="carrier-col-note">
+              사이즈 60–160: 飛脚宅配便 (≤160cm/≤30kg)<br>
+              사이즈 170–260: ラージサイズ (≤260cm/≤50kg)<br>
+              30~40kg 중량할증 +¥270, 40~50kg +¥540
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ═══ Yamato Results ═══ -->
+    <!-- ═══ JP Comparison Results ═══ -->
     <section class="card">
-      <div class="card-title"><span class="icon">📊</span> 계산 결과</div>
+      <div class="card-title"><span class="icon">📊</span> 비교 결과 (Yamato vs Sagawa)</div>
       <div class="table-scroll">
-        <table class="compare-table yamato-theme">
+        <table class="compare-table jp-theme">
           <thead>
             <tr>
-              <th>#</th>
-              <th>품명</th>
-              <th>L×W×H</th>
-              <th>중량(kg)</th>
-              <th>3변합</th>
-              <th>Size</th>
-              <th>근거</th>
-              <th>기본운임</th>
-              <th>Cool</th>
-              <th>할인</th>
-              <th>합계/개</th>
-              <th>수량</th>
-              <th>소계</th>
+              <th rowspan="2">#</th>
+              <th rowspan="2">품명</th>
+              <th colspan="4" class="th-yamato">Yamato TA-Q-BIN</th>
+              <th colspan="4" class="th-sagawa">Sagawa 飛脚宅配便</th>
+              <th rowspan="2">차이</th>
+              <th rowspan="2">수량</th>
+            </tr>
+            <tr>
+              <th class="th-yamato-sub">Size</th>
+              <th class="th-yamato-sub">기본운임</th>
+              <th class="th-yamato-sub">근거/할인</th>
+              <th class="th-yamato-sub">합계/개</th>
+              <th class="th-sagawa-sub">Size</th>
+              <th class="th-sagawa-sub">기본운임</th>
+              <th class="th-sagawa-sub">근거/할증</th>
+              <th class="th-sagawa-sub">합계/개</th>
             </tr>
           </thead>
-          <tbody id="ym-result-tbody"></tbody>
+          <tbody id="jp-result-tbody"></tbody>
         </table>
       </div>
     </section>
 
-    <!-- ═══ Yamato Summary ═══ -->
+    <!-- ═══ JP Comparison Summary ═══ -->
     <section class="card">
-      <div class="card-title"><span class="icon">💰</span> 요약</div>
+      <div class="card-title"><span class="icon">💰</span> 비교 요약</div>
       <div class="table-scroll">
-        <table class="summary-compare-table yamato-theme">
+        <table class="summary-compare-table jp-theme">
           <thead>
             <tr>
               <th></th>
-              <th class="th-yamato">Yamato TA-Q-BIN</th>
+              <th class="th-yamato">Yamato</th>
+              <th class="th-sagawa">Sagawa</th>
+              <th>차이 (Sagawa−Yamato)</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td class="row-label">활성 품목</td>
-              <td id="ym-sum-count" class="center-cell">0건 / 0개</td>
+              <td id="jp-sum-count" colspan="3" class="center-cell">0건 / 0개</td>
             </tr>
             <tr>
               <td class="row-label">기본 운임</td>
-              <td id="ym-sum-base" class="yamato-cell">¥0</td>
+              <td id="jp-sum-ym-base" class="yamato-cell">¥0</td>
+              <td id="jp-sum-sg-base" class="sagawa-cell">¥0</td>
+              <td id="jp-sum-diff-base" class="diff-cell"></td>
             </tr>
             <tr>
               <td class="row-label">Cool 할증</td>
-              <td id="ym-sum-cool" class="yamato-cell">¥0</td>
+              <td id="jp-sum-ym-cool" class="yamato-cell">-</td>
+              <td id="jp-sum-sg-cool" class="sagawa-cell">-</td>
+              <td id="jp-sum-diff-cool" class="diff-cell"></td>
             </tr>
             <tr>
-              <td class="row-label">당일 배송</td>
-              <td id="ym-sum-sameday" class="yamato-cell">¥0</td>
+              <td class="row-label">중량 할증 (Sagawa)</td>
+              <td id="jp-sum-ym-weight" class="yamato-cell">-</td>
+              <td id="jp-sum-sg-weight" class="sagawa-cell">-</td>
+              <td id="jp-sum-diff-weight" class="diff-cell"></td>
+            </tr>
+            <tr>
+              <td class="row-label">당일 배송 (Yamato)</td>
+              <td id="jp-sum-ym-sameday" class="yamato-cell">-</td>
+              <td id="jp-sum-sg-sameday" class="sagawa-cell">-</td>
+              <td id="jp-sum-diff-sameday" class="diff-cell"></td>
             </tr>
             <tr>
               <td class="row-label">할인 합계</td>
-              <td id="ym-sum-discount" class="yamato-cell discount-amount">¥0</td>
+              <td id="jp-sum-ym-discount" class="yamato-cell discount-amount">-</td>
+              <td id="jp-sum-sg-discount" class="sagawa-cell discount-amount">-</td>
+              <td id="jp-sum-diff-discount" class="diff-cell"></td>
             </tr>
             <tr class="grand-total-row">
               <td class="row-label">총 배송비</td>
-              <td id="ym-sum-grand" class="yamato-cell">¥0</td>
+              <td id="jp-sum-ym-grand" class="yamato-cell">¥0</td>
+              <td id="jp-sum-sg-grand" class="sagawa-cell">¥0</td>
+              <td id="jp-sum-diff-grand" class="diff-cell"></td>
             </tr>
           </tbody>
         </table>
       </div>
-      <div class="ym-sum-route" id="ym-sum-route"></div>
+      <div class="ym-sum-route" id="jp-sum-route"></div>
     </section>
 
-    </div><!-- end #tab-yamato -->
+    </div><!-- end #tab-jp -->
 
     <!-- ═══ Footer ═══ -->
     <footer class="footer">
@@ -436,9 +478,10 @@
   <script src="js/calculator.js"></script>
   <script src="js/amazon-calculator.js"></script>
   <script src="js/yamato-calculator.js"></script>
+  <script src="js/sagawa-calculator.js"></script>
   <script src="js/data-loader.js"></script>
   <script src="js/storage.js"></script>
-  <script src="js/yamato-ui.js"></script>
+  <script src="js/jp-ui.js"></script>
   <script src="js/ui.js"></script>
 
 </body>
