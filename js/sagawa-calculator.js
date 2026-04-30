@@ -124,8 +124,10 @@ function sagawaGetWeightSurcharge(weightKg, serviceTier, surcharges) {
   if (serviceTier !== 'large') return 0;
   const w = surcharges.weight_over_30kg;
   if (!w) return 0;
-  if (weightKg > 40) return w['40_to_50_kg'] || 540;
-  if (weightKg > 30) return w['30_to_40_kg'] || 270;
+  // 0 is a valid value (통상 배송 = 별도 할증 없음, 50kg 운임 적용).
+  // Use ?? so that 0 is not treated as "missing" by ||.
+  if (weightKg > 40) return w['40_to_50_kg'] ?? 0;
+  if (weightKg > 30) return w['30_to_40_kg'] ?? 0;
   return 0;
 }
 

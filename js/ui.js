@@ -929,7 +929,7 @@ const UI = (() => {
       </div>
       <div class="term-row">
         <div class="term-name">4종 할인 (중복 적용 가능)</div>
-        <div class="term-desc">지참 (-¥110) / 디지털 (-¥60) / 복수구 (-¥100) / 영업소 수취 (-¥60).</div>
+        <div class="term-desc">지참 (-¥100) / 디지털 (-¥60) / 복수구 (-¥100) / 영업소 수취 (-¥60). 회원 지참할인은 -¥150 (일반 지참 대체, 중복 X).</div>
       </div>
     </div>
 
@@ -944,8 +944,8 @@ const UI = (() => {
         <div class="term-desc">3변 합 >160cm OR 중량 >30kg → 사이즈 170 / 180 / 200 / 220 / 240 / 260. 최대 3변 합 260cm, 중량 50kg.</div>
       </div>
       <div class="term-row">
-        <div class="term-name">중량 할증</div>
-        <div class="term-desc">대형 택배에만 적용. 30~40kg +¥270, 40~50kg +¥540 (개당).</div>
+        <div class="term-name">중량 처리 (30kg 초과)</div>
+        <div class="term-desc">통상 배송: 30kg 초과 ~ 50kg은 별도 할증 없이 50kg 운임 적용 (공식 기준).<br>익일/오전 항공편: 10kg마다 +¥2,200 (오키나와 +¥2,420). — 본 계산기는 통상 배송 기준.</div>
       </div>
       <div class="term-row">
         <div class="term-name">영업소 반입</div>

@@ -287,7 +287,8 @@ const JpUI = (() => {
         : '<span class="sg-tag sg-tag--std" title="일반 택배 (60~160)">일반</span>';
       const sizeLabel = `${line.appliedSize} ${tier}`;
       if (line.coolError) tags.push(`<span class="sg-tag sg-tag--cool-err">Cool불가</span>`);
-      if (line.weightSurcharge > 0) tags.push(`<span class="sg-tag sg-tag--weight">중량할증 +¥${fmtJpy(line.weightSurcharge)}</span>`);
+      // 중량 할증: 통상 배송에서는 적용 X (공식 기준). 익일/항공편 옵션 추가 시 활성화.
+      if (line.weightSurcharge > 0) tags.push(`<span class="sg-tag sg-tag--weight">중량 할증 +¥${fmtJpy(line.weightSurcharge)}</span>`);
       if (line.coolSurcharge > 0) tags.push(`<span class="sg-tag sg-tag--cool">냉장/냉동 +¥${fmtJpy(line.coolSurcharge)}</span>`);
       if (line.branchDiscount < 0) tags.push(`<span class="sg-tag sg-tag--discount">영업소반입 ¥${fmtJpy(line.branchDiscount)}</span>`);
 
@@ -311,7 +312,6 @@ const JpUI = (() => {
 
     setRow('base', ym.baseSubtotal, sg.baseSubtotal);
     setRow('cool', ym.coolSubtotal, sg.coolSubtotal);
-    setRow('weight', 0, sg.weightSubtotal);
     setRow('sameday', ym.sameDaySubtotal, 0);
     setRow('discount', ym.discountSubtotal, sg.branchSubtotal);
     setGrand(ym.grandTotal, sg.grandTotal);
@@ -446,11 +446,6 @@ const JpUI = (() => {
             label: '냉장/냉동 할증',
             data: [ymCool, sgCool],
             backgroundColor: ['rgba(124, 179, 247, 0.6)', 'rgba(124, 179, 247, 0.6)'],
-          },
-          {
-            label: '중량 할증 (사가와 전용)',
-            data: [0, sgWeight],
-            backgroundColor: ['rgba(0,0,0,0)', 'rgba(251, 191, 36, 0.6)'],
           },
           {
             label: '당일 배송 (야마토 전용)',

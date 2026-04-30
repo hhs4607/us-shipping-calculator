@@ -14,16 +14,18 @@
     "note": "Cool surcharge added on top of base rate. Refrigerated 2-10°C or frozen -15°C, same price. Service unavailable above 140-size."
   },
   "weight_over_30kg": {
-    "30_to_40_kg": 270,
-    "40_to_50_kg": 540,
-    "note": "Per-package surcharge added when actual weight exceeds 30kg, applied only on Large-size service (170-260). +¥270 for 30<w≤40, +¥540 for 40<w≤50."
+    "30_to_40_kg": 0,
+    "40_to_50_kg": 0,
+    "note": "통상 배송(飛脚宅配便/ラージサイズ)에서는 30kg 초과 ~ 50kg까지 별도 중량 할증 없음 — 50kg 운임 그대로 적용. 익일/오전 항공편(翌日中・翌日午前)에서만 10kg마다 ¥2,200 (오키나와 ¥2,420) 추가. 본 계산기는 통상 배송 기준이므로 0 적용. Source: sagawa-exp.co.jp/fare/attention.html (verified 2026-04).",
+    "next_day_air_per_10kg": 2200,
+    "next_day_air_okinawa_per_10kg": 2420
   },
   "branch_dropoff_discount": {
     "fee": -100,
     "note": "Drop-off at Sagawa branch reduces fare by ¥100/item. Excludes contract rates and COD shipments."
   },
   "remote_island": {
-    "note": "中継料 (transit fee) applies for some remote islands beyond posted rate matrix; varies by destination."
+    "note": "Transit fee applies for some remote islands beyond posted rate matrix; varies by destination."
   },
   "fuel": {
     "note": "Domestic Sagawa parcel has no separate fuel surcharge — already included in base rate. International parcel is 18% as of 2024-10."
