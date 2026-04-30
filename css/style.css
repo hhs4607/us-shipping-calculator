@@ -1311,6 +1311,150 @@ th .tip:hover::after {
   font-size: 0.75rem !important;
 }
 
+/* ─── Sagawa Theme (mirrors yamato-theme structure) ─────────────── */
+:root {
+  --sagawa-color: #3b82f6;
+  --sagawa-bg: rgba(59, 130, 246, 0.08);
+  --sagawa-border: rgba(59, 130, 246, 0.25);
+}
+
+.yamato-col .carrier-col-title {
+  color: var(--yamato-color);
+}
+
+.sagawa-col .carrier-col-title {
+  color: var(--sagawa-color);
+}
+
+.compare-table .yamato-cell {
+  color: var(--yamato-color);
+  background: var(--yamato-bg);
+}
+
+.compare-table .sagawa-cell {
+  color: var(--sagawa-color);
+  background: var(--sagawa-bg);
+}
+
+.summary-compare-table .sagawa-cell {
+  color: var(--sagawa-color);
+  font-weight: 600;
+}
+
+.summary-compare-table .grand-total-row .sagawa-cell {
+  font-size: 1.1rem;
+}
+
+.compare-table.jp-theme thead th {
+  border-bottom: 2px solid var(--border);
+}
+
+.th-sagawa {
+  background: rgba(59, 130, 246, 0.12) !important;
+  color: var(--sagawa-color) !important;
+  border-bottom: 2px solid var(--sagawa-color) !important;
+}
+
+.th-yamato-sub {
+  background: rgba(239, 68, 68, 0.06);
+  font-size: 0.65rem;
+  color: var(--yamato-color);
+}
+
+.th-sagawa-sub {
+  background: rgba(59, 130, 246, 0.06);
+  font-size: 0.65rem;
+  color: var(--sagawa-color);
+}
+
+.compare-table.jp-theme .error-row {
+  color: var(--diff-positive);
+  font-size: 0.75rem;
+  text-align: left !important;
+}
+
+.jp-tag-cell {
+  text-align: left !important;
+  white-space: normal;
+  font-size: 0.65rem;
+  line-height: 1.3;
+}
+
+.jp-tag-cell .adj-line {
+  display: inline-block;
+  margin-top: 0.15rem;
+  color: var(--text-m);
+  font-size: 0.6rem;
+}
+
+.sg-tag {
+  display: inline-block;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid var(--border);
+  vertical-align: middle;
+  margin-right: 0.15rem;
+}
+
+.sg-tag--std {
+  color: #8c8;
+  border-color: #4a4;
+}
+
+.sg-tag--large {
+  color: #db8;
+  border-color: #a84;
+}
+
+.sg-tag--cool {
+  color: #7cb3f7;
+  border-color: #4a78a8;
+}
+
+.sg-tag--cool-err {
+  color: #f77;
+  border-color: #c44;
+}
+
+.sg-tag--weight {
+  color: #db8;
+  border-color: #a84;
+}
+
+.sg-tag--discount {
+  color: var(--diff-negative);
+  border-color: #2a4;
+}
+
+/* ─── JP comparison: winner / divergent / asymmetric error ─────── */
+.compare-table.jp-theme td.winner-cell {
+  position: relative;
+  box-shadow: inset 0 -2px 0 #22c55e;
+  font-weight: 700;
+}
+
+.winner-badge {
+  display: inline-block;
+  margin-left: 0.2rem;
+  color: #22c55e;
+  font-size: 0.65rem;
+  vertical-align: middle;
+}
+
+.compare-table.jp-theme td.size-divergent {
+  background-image: linear-gradient(rgba(251, 191, 36, 0.10), rgba(251, 191, 36, 0.10));
+  border-left: 2px solid rgba(251, 191, 36, 0.5);
+}
+
+.compare-table.jp-theme .diff-cell {
+  font-size: 0.7rem;
+  white-space: nowrap;
+  text-align: center;
+}
+
 /* ─── Shared Items Units Row ─────────────────────────────────────── */
 .items-units {
   display: flex;

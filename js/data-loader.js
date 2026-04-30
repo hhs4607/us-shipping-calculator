@@ -47,6 +47,7 @@ const DataLoader = (() => {
     }
 
     const YAMATO_PATH = 'public/data/2025/yamato';
+    const SAGAWA_PATH = 'public/data/2025/sagawa';
 
     async function loadYamatoJSON(filename) {
         const cacheKey = `yamato/${filename}`;
@@ -72,9 +73,35 @@ const DataLoader = (() => {
         return { ratesCash, ratesCashless, ratesIntrapref, zones, surcharges, discounts, defaults, meta };
     }
 
+    async function loadSagawaJSON(filename) {
+        const cacheKey = `sagawa/${filename}`;
+        if (_cache[cacheKey]) return _cache[cacheKey];
+        const resp = await fetch(`${SAGAWA_PATH}/${filename}`);
+        if (!resp.ok) throw new Error(`Failed to load ${cacheKey}: ${resp.status}`);
+        const data = await resp.json();
+        _cache[cacheKey] = data;
+        return data;
+    }
+
+    async function loadSagawa() {
+        const [rates, zones, surcharges, defaults, meta] = await Promise.all([
+            loadSagawaJSON('rates.json'),
+            loadSagawaJSON('zones.json'),
+            loadSagawaJSON('surcharges.json'),
+            loadSagawaJSON('defaults.json'),
+            loadSagawaJSON('meta.json'),
+        ]);
+        return { rates, zones, surcharges, defaults, meta };
+    }
+
+    async function loadJp() {
+        const [yamato, sagawa] = await Promise.all([loadYamato(), loadSagawa()]);
+        return { yamato, sagawa };
+    }
+
     function clearCache() {
         _cache = {};
     }
 
-    return { loadJSON, loadAll, loadBoth, loadYamato, getCarriers, clearCache };
+    return { loadJSON, loadAll, loadBoth, loadYamato, loadSagawa, loadJp, getCarriers, clearCache };
 })();
