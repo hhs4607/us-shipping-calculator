@@ -2,7 +2,7 @@
  * UI Controller V7 — Shared Items + Tab-based Comparison
  * V7: Items input shared between US and Japan tabs.
  * US tab: FedEx vs Amazon side-by-side comparison.
- * Japan tab: Yamato TA-Q-BIN (via YamatoUI module).
+ * Japan tab: 야마토 vs 사가와 비교 (via JpUI module).
  */
 
 const UI = (() => {
@@ -890,78 +890,78 @@ const UI = (() => {
     </div>
 
     <div class="help-section">
-      <h4>🇯🇵 Japan — 공통 용어</h4>
+      <h4>🇯🇵 일본 배송 — 공통 용어</h4>
       <div class="term-row">
-        <div class="term-name">3변합<br>(3辺合計)</div>
-        <div class="term-desc"><strong>가로 + 세로 + 높이(cm)</strong>의 합계입니다. 일본 택배 사이즈 판정의 핵심 기준.</div>
+        <div class="term-name">3변 합</div>
+        <div class="term-desc"><strong>가로 + 세로 + 높이(cm)</strong>의 합계. 일본 택배 사이즈 판정의 핵심 기준입니다.</div>
       </div>
       <div class="term-row">
-        <div class="term-name">Size<br>(사이즈 등급)</div>
-        <div class="term-desc">3변합과 중량 중 더 큰 사이즈 적용 (Yamato 표준/Sagawa 표준). Sagawa 라지(170~)는 3변합 기준만 + 중량할증 별도.</div>
+        <div class="term-name">사이즈 등급</div>
+        <div class="term-desc">3변 합과 중량 중 더 큰 사이즈가 적용됩니다. 사가와 대형(170~)은 3변 합 기준만 사용하고 중량 할증이 별도로 붙습니다.</div>
       </div>
       <div class="term-row">
-        <div class="term-name">현내배송</div>
-        <div class="term-desc">Yamato 전용. 같은 현 내 배송 시 할인 운임. Sagawa는 별도 할인 없음 (표준 요율). 오키나와 제외.</div>
+        <div class="term-name">현내 배송</div>
+        <div class="term-desc">야마토 전용 옵션. 같은 현(行政구역) 내 배송 시 할인 운임 적용. 사가와는 해당 할인 없음. 오키나와 제외.</div>
       </div>
       <div class="term-row">
-        <div class="term-name">Cool 서비스</div>
-        <div class="term-desc">냉장(0~10°C) 또는 냉동(-15°C). <strong>Yamato Size≤120</strong>, <strong>Sagawa Size≤140</strong>까지 가능. 사이즈별 추가 요금.</div>
+        <div class="term-name">냉장/냉동 배송</div>
+        <div class="term-desc">냉장(0~10°C) 또는 냉동(-15°C). <strong>야마토 Size≤120</strong>, <strong>사가와 Size≤140</strong>까지 가능. 사이즈별 추가 요금.</div>
       </div>
     </div>
 
     <div class="help-section">
-      <h4>🟥 Yamato TA-Q-BIN</h4>
+      <h4>🟥 야마토 택배</h4>
       <div class="term-row">
         <div class="term-name">최대 한도</div>
-        <div class="term-desc">3변합 200cm, 최장변 170cm, 중량 30kg.</div>
+        <div class="term-desc">3변 합 200cm, 최장변 170cm, 중량 30kg.</div>
       </div>
       <div class="term-row">
         <div class="term-name">사이즈 등급</div>
-        <div class="term-desc">60/80/100/120/140/160/180/200. MAX(3변합 tier, 중량 tier) 적용.</div>
+        <div class="term-desc">60 / 80 / 100 / 120 / 140 / 160 / 180 / 200. MAX(3변 합 등급, 중량 등급) 적용.</div>
       </div>
       <div class="term-row">
         <div class="term-name">결제 방법</div>
-        <div class="term-desc">현금/캐시리스 — 캐시리스가 ¥1~5 저렴.</div>
+        <div class="term-desc">현금 / 캐시리스 — 캐시리스가 ¥1~5 저렴.</div>
       </div>
       <div class="term-row">
         <div class="term-name">당일 배송</div>
         <div class="term-desc">전국 +¥550, 오키나와 +¥330.</div>
       </div>
       <div class="term-row">
-        <div class="term-name">4종 할인</div>
-        <div class="term-desc">지참(-¥110) / 디지털(-¥60) / 복수구(-¥100) / 영업소수취(-¥60). 중복 적용 가능.</div>
+        <div class="term-name">4종 할인 (중복 적용 가능)</div>
+        <div class="term-desc">지참 (-¥110) / 디지털 (-¥60) / 복수구 (-¥100) / 영업소 수취 (-¥60).</div>
       </div>
     </div>
 
     <div class="help-section">
-      <h4>🟦 Sagawa 飛脚宅配便 / ラージサイズ</h4>
+      <h4>🟦 사가와 택배</h4>
       <div class="term-row">
-        <div class="term-name">표준 (飛脚宅配便)</div>
-        <div class="term-desc">3변합 ≤160cm AND 중량 ≤30kg → Size 60/80/100/140/160.</div>
+        <div class="term-name">일반 택배</div>
+        <div class="term-desc">3변 합 ≤160cm AND 중량 ≤30kg → 사이즈 60 / 80 / 100 / 140 / 160.</div>
       </div>
       <div class="term-row">
-        <div class="term-name">라지 (飛脚ラージサイズ)</div>
-        <div class="term-desc">3변합 >160cm OR 중량 >30kg → Size 170/180/200/220/240/260. 최대 3변합 260cm, 중량 50kg.</div>
+        <div class="term-name">대형 택배</div>
+        <div class="term-desc">3변 합 >160cm OR 중량 >30kg → 사이즈 170 / 180 / 200 / 220 / 240 / 260. 최대 3변 합 260cm, 중량 50kg.</div>
       </div>
       <div class="term-row">
         <div class="term-name">중량 할증</div>
-        <div class="term-desc">라지 서비스만 적용. 30~40kg +¥270, 40~50kg +¥540 (1개당).</div>
+        <div class="term-desc">대형 택배에만 적용. 30~40kg +¥270, 40~50kg +¥540 (개당).</div>
       </div>
       <div class="term-row">
         <div class="term-name">영업소 반입</div>
-        <div class="term-desc">영업소에 직접 반입 시 1개당 -¥100. 계약운임/대금인환 제외.</div>
+        <div class="term-desc">사가와 영업소에 직접 반입 시 개당 -¥100. 계약 운임 / 대금 인환은 제외.</div>
       </div>
       <div class="term-row">
-        <div class="term-name">연료할증</div>
-        <div class="term-desc">국내(飛脚宅配便)는 별도 연료할증 없음 (요율에 이미 포함). 국제만 18% 별도.</div>
+        <div class="term-name">연료 할증</div>
+        <div class="term-desc">국내 택배는 별도 연료 할증 없음 (요율에 포함). 국제 택배는 18% 별도.</div>
       </div>
     </div>
 
     <div class="tip-box">
       <strong>💡 참고:</strong><br>
-      • US: 추가 수수료는 품목당 1종류만 적용됩니다. 우선순위가 높은 것만 부과.<br>
-      • Japan: 출발/도착지 선택은 Sagawa 13지역 기준. Yamato 호출 시 北/南九州→九州, 東海→中部 자동 매핑.<br>
-      • 비교 결과 차이 컬럼: 양수(빨강) = Sagawa가 비쌈, 음수(초록) = Sagawa가 저렴.
+      • 미국: 추가 수수료는 품목당 1종류만 적용 (우선순위가 높은 것만).<br>
+      • 일본: 출발/도착지 선택은 사가와 13지역 기준. 야마토 호출 시 북규슈/남규슈 → 규슈, 도카이 → 주부 자동 매핑.<br>
+      • 비교 결과 "차이" 컬럼: 양수(빨강) = 사가와가 비쌈, 음수(초록) = 사가와가 저렴.
     </div>
 
     <div class="close-row">
@@ -1019,26 +1019,26 @@ const UI = (() => {
     </div>
 
     <div class="help-section">
-      <h4>🇯🇵 Japan Domestic — Yamato vs Sagawa 비교</h4>
+      <h4>🇯🇵 일본 — 야마토 vs 사가와 비교</h4>
       <div class="step-row">
         <span class="step-num">5</span>
         <div class="step-content">
-          <div class="step-title">JP 경로 설정 (공통)</div>
-          <div class="step-detail">출발지와 도착지를 선택합니다 (Sagawa 13지역 기준). Yamato는 자동으로 12지역으로 매핑됩니다.<br>Cool 서비스도 두 배송사 동시 적용. 동일 현내 체크 시 Yamato에만 할인 운임 적용.</div>
+          <div class="step-title">경로 설정 (공통)</div>
+          <div class="step-detail">출발지와 도착지를 선택합니다 (사가와 13지역 기준). 야마토는 자동으로 12지역으로 매핑됩니다.<br>냉장/냉동 배송도 두 배송사 동시 적용. 현내 배송 체크 시 야마토에만 할인 운임 적용.</div>
         </div>
       </div>
       <div class="step-row">
         <span class="step-num">6</span>
         <div class="step-content">
           <div class="step-title">배송사별 설정</div>
-          <div class="step-detail"><strong>Yamato:</strong> 결제(현금/캐시리스), 4종 할인(지참/디지털/복수구/영업소수취), 당일 배송.<br><strong>Sagawa:</strong> 영업소 반입 할인 (-¥100/개).</div>
+          <div class="step-detail"><strong>야마토:</strong> 결제(현금/캐시리스), 4종 할인(지참/디지털/복수구/영업소수취), 당일 배송.<br><strong>사가와:</strong> 영업소 반입 할인 (-¥100/개).</div>
         </div>
       </div>
       <div class="step-row">
         <span class="step-num">7</span>
         <div class="step-content">
           <div class="step-title">비교 결과 확인</div>
-          <div class="step-detail">동일 화물에 대한 Yamato와 Sagawa 사이즈 판정/요율/할증/할인/합계를 한 행에서 비교합니다.<br>요약 표에서 비용 구성별 차이와 총 배송비 차이(%)를 확인할 수 있습니다.<br>각 배송사 한도 초과 품목은 별도 에러로 표시됩니다.</div>
+          <div class="step-detail">같은 화물에 대해 야마토와 사가와의 사이즈 판정 / 요율 / 할증 / 할인 / 합계를 한 행에서 비교합니다.<br>요약 표에서 비용 구성별 차이와 총 배송비 차이(%)를 확인할 수 있습니다.<br>각 배송사 한도를 초과한 품목은 별도 에러로 표시됩니다.</div>
         </div>
       </div>
     </div>

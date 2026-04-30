@@ -1,5 +1,5 @@
 /**
- * Yamato Transport TA-Q-BIN — Shipping Cost Calculator Engine
+ * Yamato (야마토 택배) — Shipping Cost Calculator Engine
  *
  * Size determination: Applied Size = MAX(3-side-sum tier, weight tier)
  * No DIM divisor formula. All rates in JPY (tax included).
@@ -40,25 +40,25 @@ function yamatoCalcSize(L_cm, W_cm, H_cm, weightKg) {
   const longest = dims[0];
   const threeSideSum = L_cm + W_cm + H_cm;
 
-  // Validate limits
+  // 한도 검증
   if (longest > YAMATO_MAX_LONGEST_CM) {
     return {
       error: true,
-      reason: `最長辺 ${longest.toFixed(0)}cm > ${YAMATO_MAX_LONGEST_CM}cm 超過`,
+      reason: `최장변 ${longest.toFixed(0)}cm > ${YAMATO_MAX_LONGEST_CM}cm 초과`,
       threeSideSum, longest
     };
   }
   if (threeSideSum > YAMATO_MAX_THREE_SIDE_CM) {
     return {
       error: true,
-      reason: `3辺合計 ${threeSideSum.toFixed(0)}cm > ${YAMATO_MAX_THREE_SIDE_CM}cm 超過`,
+      reason: `3변 합 ${threeSideSum.toFixed(0)}cm > ${YAMATO_MAX_THREE_SIDE_CM}cm 초과`,
       threeSideSum, longest
     };
   }
   if (weightKg > YAMATO_MAX_WEIGHT_KG) {
     return {
       error: true,
-      reason: `重量 ${weightKg.toFixed(1)}kg > ${YAMATO_MAX_WEIGHT_KG}kg 超過`,
+      reason: `중량 ${weightKg.toFixed(1)}kg > ${YAMATO_MAX_WEIGHT_KG}kg 초과`,
       threeSideSum, longest
     };
   }
@@ -69,7 +69,7 @@ function yamatoCalcSize(L_cm, W_cm, H_cm, weightKg) {
   if (!sumTier || !weightTier) {
     return {
       error: true,
-      reason: 'サイズ超過',
+      reason: '사이즈 초과',
       threeSideSum, longest
     };
   }
@@ -86,8 +86,8 @@ function yamatoCalcSize(L_cm, W_cm, H_cm, weightKg) {
     appliedSize,
     sizeSource,
     reason: sizeSource === 'sum'
-      ? `3辺計 ${threeSideSum.toFixed(0)}cm → Size ${sumTier}`
-      : `重量 ${weightKg.toFixed(1)}kg → Size ${weightTier}`
+      ? `3변 합 ${threeSideSum.toFixed(0)}cm → 사이즈 ${sumTier}`
+      : `중량 ${weightKg.toFixed(1)}kg → 사이즈 ${weightTier}`
   };
 }
 

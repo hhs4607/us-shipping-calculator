@@ -1,14 +1,14 @@
 /**
- * Sagawa Express 飛脚宅配便 + 飛脚ラージサイズ宅配便 — Calculator Engine
+ * Sagawa (사가와) — 일반 택배 + 대형 택배 계산 엔진
  *
- * Two service tiers in one matrix:
- *   Standard (飛脚宅配便):  3-side ≤160cm AND weight ≤30kg → size 60/80/100/140/160
- *   Large    (飛脚ラージ):  3-side >160cm OR weight >30kg  → size 170/180/200/220/240/260
+ * 두 가지 서비스 등급을 단일 매트릭스로 처리:
+ *   일반 택배:  3변 합 ≤160cm AND 무게 ≤30kg → 사이즈 60/80/100/140/160
+ *   대형 택배:  3변 합 >160cm OR 무게 >30kg  → 사이즈 170/180/200/220/240/260
  *
- * Standard tier rule: applied = MAX(3-side tier, weight tier).
- * Large tier rule:    applied = 3-side tier; weight 30~40kg adds +¥270, 40~50kg adds +¥540.
+ * 일반 등급 결정: applied = MAX(3변 합 tier, 무게 tier)
+ * 대형 등급 결정: applied = 3변 합 tier; 무게 30~40kg +¥270, 40~50kg +¥540
  *
- * Hard limits: 3-side ≤260cm, longest ≤170cm, weight ≤50kg.
+ * 한도: 3변 합 ≤260cm, 최장변 ≤170cm, 무게 ≤50kg
  */
 
 // ─── Tier Tables ────────────────────────────────────────────────────
@@ -49,19 +49,19 @@ function sagawaCalcSize(L_cm, W_cm, H_cm, weightKg) {
   const threeSideSum = L_cm + W_cm + H_cm;
 
   if (longest > SAGAWA_MAX_LONGEST_CM) {
-    return { error: true, reason: `最長辺 ${longest.toFixed(0)}cm > ${SAGAWA_MAX_LONGEST_CM}cm 超過`, threeSideSum, longest };
+    return { error: true, reason: `최장변 ${longest.toFixed(0)}cm > ${SAGAWA_MAX_LONGEST_CM}cm 초과`, threeSideSum, longest };
   }
   if (threeSideSum > SAGAWA_MAX_THREE_SIDE_CM) {
-    return { error: true, reason: `3辺合計 ${threeSideSum.toFixed(0)}cm > ${SAGAWA_MAX_THREE_SIDE_CM}cm 超過`, threeSideSum, longest };
+    return { error: true, reason: `3변 합 ${threeSideSum.toFixed(0)}cm > ${SAGAWA_MAX_THREE_SIDE_CM}cm 초과`, threeSideSum, longest };
   }
   if (weightKg > SAGAWA_MAX_WEIGHT_KG) {
-    return { error: true, reason: `重量 ${weightKg.toFixed(1)}kg > ${SAGAWA_MAX_WEIGHT_KG}kg 超過`, threeSideSum, longest };
+    return { error: true, reason: `중량 ${weightKg.toFixed(1)}kg > ${SAGAWA_MAX_WEIGHT_KG}kg 초과`, threeSideSum, longest };
   }
 
   const isStandard = threeSideSum <= SAGAWA_STD_THREE_SIDE_LIMIT_CM && weightKg <= SAGAWA_STD_WEIGHT_LIMIT_KG;
   const sumTier = sagawaSumToTier(threeSideSum);
   if (!sumTier) {
-    return { error: true, reason: 'サイズ超過', threeSideSum, longest };
+    return { error: true, reason: '사이즈 초과', threeSideSum, longest };
   }
 
   let appliedSize, sizeSource, weightTier = null, reason;
@@ -71,15 +71,15 @@ function sagawaCalcSize(L_cm, W_cm, H_cm, weightKg) {
     appliedSize = Math.max(sumTier, weightTier);
     sizeSource = sumTier >= weightTier ? 'sum' : 'weight';
     reason = sizeSource === 'sum'
-      ? `3辺計 ${threeSideSum.toFixed(0)}cm → Size ${sumTier}`
-      : `重量 ${weightKg.toFixed(1)}kg → Size ${weightTier}`;
+      ? `3변 합 ${threeSideSum.toFixed(0)}cm → 사이즈 ${sumTier}`
+      : `중량 ${weightKg.toFixed(1)}kg → 사이즈 ${weightTier}`;
   } else {
-    // Large service: tier from 3-side total only; if 3-side ≤160 but weight >30, force minimum 170.
+    // 대형 서비스: 3변 합 기준만 사용. 3변 합 ≤160이고 무게 >30kg이면 최소 170 강제
     appliedSize = sumTier < 170 ? 170 : sumTier;
     sizeSource = appliedSize === sumTier ? 'sum' : 'weight_force';
     reason = sizeSource === 'sum'
-      ? `3辺計 ${threeSideSum.toFixed(0)}cm → Size ${sumTier} (Large)`
-      : `重量 ${weightKg.toFixed(1)}kg > 30kg → Size 170 (Large)`;
+      ? `3변 합 ${threeSideSum.toFixed(0)}cm → 사이즈 ${sumTier} (대형)`
+      : `중량 ${weightKg.toFixed(1)}kg > 30kg → 사이즈 170 (대형)`;
   }
 
   return {
