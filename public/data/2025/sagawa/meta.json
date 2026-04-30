@@ -1,0 +1,93 @@
+{
+  "service": "Sagawa Express Hikyaku Takuhaibin",
+  "service_ja": "佐川急便 飛脚宅配便・飛脚ラージサイズ宅配便",
+  "country": "JP",
+  "currency": "JPY",
+  "year": 2025,
+  "effective_date": "2024-04-01",
+  "source_files": [
+    "https://www.sagawa-exp.co.jp/send/fare/faretable01.html (Hokkaido origin)",
+    "https://www.sagawa-exp.co.jp/send/fare/faretable02.html (Kita-Tohoku)",
+    "https://www.sagawa-exp.co.jp/send/fare/faretable03.html (Minami-Tohoku)",
+    "https://www.sagawa-exp.co.jp/send/fare/faretable04.html (Kanto)",
+    "https://www.sagawa-exp.co.jp/send/fare/faretable05.html (Shin'etsu)",
+    "https://www.sagawa-exp.co.jp/send/fare/faretable06.html (Hokuriku)",
+    "https://www.sagawa-exp.co.jp/send/fare/faretable07.html (Tokai)",
+    "https://www.sagawa-exp.co.jp/send/fare/faretable08.html (Kansai)",
+    "https://www.sagawa-exp.co.jp/send/fare/faretable09.html (Chugoku)",
+    "https://www.sagawa-exp.co.jp/send/fare/faretable10.html (Shikoku)",
+    "https://www.sagawa-exp.co.jp/send/fare/faretable11.html (Kita-Kyushu)",
+    "https://www.sagawa-exp.co.jp/send/fare/faretable12.html (Minami-Kyushu)",
+    "https://www.sagawa-exp.co.jp/send/fare/faretable13.html (Okinawa)",
+    "https://www.sagawa-exp.co.jp/fare/cool_faretable.html (Cool surcharge)"
+  ],
+  "data_version": "2025.04",
+  "size_tiers": [
+    60,
+    80,
+    100,
+    140,
+    160,
+    170,
+    180,
+    200,
+    220,
+    240,
+    260
+  ],
+  "service_tiers": {
+    "standard": {
+      "name_ja": "飛脚宅配便",
+      "size_tiers": [60, 80, 100, 140, 160],
+      "max_three_side_sum_cm": 160,
+      "max_weight_kg": 30
+    },
+    "large": {
+      "name_ja": "飛脚ラージサイズ宅配便",
+      "size_tiers": [170, 180, 200, 220, 240, 260],
+      "min_three_side_sum_cm": 161,
+      "max_three_side_sum_cm": 260,
+      "max_weight_kg": 50,
+      "weight_surcharge": {
+        "30_to_40_kg": 270,
+        "40_to_50_kg": 540
+      }
+    }
+  },
+  "size_rules": {
+    "applied_size": "MAX(three_side_sum_tier, weight_tier) for standard; three_side_sum_tier with weight surcharge for large",
+    "max_three_side_sum_cm": 260,
+    "max_weight_kg": 50,
+    "weight_to_tier": {
+      "60": 2,
+      "80": 5,
+      "100": 10,
+      "140": 20,
+      "160": 30
+    }
+  },
+  "regions": [
+    "hokkaido",
+    "kita_tohoku",
+    "minami_tohoku",
+    "kanto",
+    "shin_etsu",
+    "tokai",
+    "hokuriku",
+    "kansai",
+    "chugoku",
+    "shikoku",
+    "kita_kyushu",
+    "minami_kyushu",
+    "okinawa"
+  ],
+  "notes": [
+    "All rates include 10% consumption tax",
+    "Standard service: 3-side ≤160cm AND weight ≤30kg → tier = MAX(3-side tier, weight tier)",
+    "Large service: 3-side >160cm OR weight >30kg → tier from 3-side total; +¥270 for 30<w≤40, +¥540 for 40<w≤50",
+    "No fuel surcharge for domestic service (already included in base rates)",
+    "Branch drop-off: -¥100/item (excludes contract/COD)",
+    "Cool service available only up to 140-size (140cm/30kg)",
+    "Maximum: 3-side 260cm, weight 50kg, longest side 170cm (per Sagawa standard)"
+  ]
+}
