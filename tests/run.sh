@@ -28,9 +28,22 @@ if ! curl -sf "${BASE_URL}/index.html" >/dev/null; then
 fi
 
 # Run each test file.
+echo "════ 1. JP Smoke Test (앱 동작 일관성) ════"
 TEST_BASE_URL="$BASE_URL" \
 HEADLESS="${HEADLESS:-1}" \
 node tests/jp-smoke.test.js
+SMOKE_RC=$?
 
 echo
-echo "All tests done."
+echo "════ 2. JP Compliance Test (공식 규정 일치성) ════"
+node tests/jp-compliance.test.js
+COMPLIANCE_RC=$?
+
+echo
+if [ "$SMOKE_RC" -eq 0 ] && [ "$COMPLIANCE_RC" -eq 0 ]; then
+  echo "✅ All tests passed."
+  exit 0
+else
+  echo "❌ Failures: smoke=$SMOKE_RC compliance=$COMPLIANCE_RC"
+  exit 1
+fi
