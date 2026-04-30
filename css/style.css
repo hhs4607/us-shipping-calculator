@@ -1429,6 +1429,32 @@ th .tip:hover::after {
   border-color: #2a4;
 }
 
+/* ─── JP comparison: winner / divergent / asymmetric error ─────── */
+.compare-table.jp-theme td.winner-cell {
+  position: relative;
+  box-shadow: inset 0 -2px 0 #22c55e;
+  font-weight: 700;
+}
+
+.winner-badge {
+  display: inline-block;
+  margin-left: 0.2rem;
+  color: #22c55e;
+  font-size: 0.65rem;
+  vertical-align: middle;
+}
+
+.compare-table.jp-theme td.size-divergent {
+  background-image: linear-gradient(rgba(251, 191, 36, 0.10), rgba(251, 191, 36, 0.10));
+  border-left: 2px solid rgba(251, 191, 36, 0.5);
+}
+
+.compare-table.jp-theme .diff-cell {
+  font-size: 0.7rem;
+  white-space: nowrap;
+  text-align: center;
+}
+
 /* ─── Shared Items Units Row ─────────────────────────────────────── */
 .items-units {
   display: flex;

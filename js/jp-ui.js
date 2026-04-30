@@ -13,6 +13,8 @@ const JpUI = (() => {
   let yamatoData = null;
   let sagawaData = null;
   let state = null;
+  let chartItemCompare = null;
+  let chartCostBreakdown = null;
 
   // ─── Utilities ──────────────────────────────────────────────────
 
@@ -166,6 +168,7 @@ const JpUI = (() => {
 
     renderResults(paired);
     renderSummary(yamatoResult, sagawaResult);
+    renderCharts(paired, yamatoResult, sagawaResult);
   }
 
   // ─── Results Table ────────────────────────────────────────────
@@ -191,15 +194,36 @@ const JpUI = (() => {
       const ym = p.yamato;
       const sg = p.sagawa;
 
-      const ymCell = renderCarrierCell(ym, 'yamato');
-      const sgCell = renderCarrierCell(sg, 'sagawa');
+      // Decide per-row winner. Both OK → cheaper wins. One errors → other wins by default.
+      let ymWin = false, sgWin = false;
+      if (!ym.error && !sg.error) {
+        if (sg.lineTotal < ym.lineTotal - 0.5) sgWin = true;
+        else if (ym.lineTotal < sg.lineTotal - 0.5) ymWin = true;
+      } else if (ym.error && !sg.error) {
+        sgWin = true;
+      } else if (sg.error && !ym.error) {
+        ymWin = true;
+      }
 
-      const bothOk = !ym.error && !sg.error;
-      let diff = 0, diffHtml = '-';
-      if (bothOk) {
-        diff = sg.lineTotal - ym.lineTotal;
+      // Size divergence (both ok but different appliedSize) — flag it.
+      const sizeDivergent = !ym.error && !sg.error && ym.appliedSize !== sg.appliedSize;
+
+      const ymCell = renderCarrierCell(ym, 'yamato', { winner: ymWin, sizeDivergent });
+      const sgCell = renderCarrierCell(sg, 'sagawa', { winner: sgWin, sizeDivergent });
+
+      // Diff cell: explicit winner annotation when one errored or they're not equal.
+      let diffHtml = '-';
+      if (!ym.error && !sg.error) {
+        const diff = sg.lineTotal - ym.lineTotal;
         const cls = diff > 0.5 ? 'diff-positive' : diff < -0.5 ? 'diff-negative' : 'diff-zero';
-        diffHtml = `<span class="${cls}">${fmtJpyDiff(diff)}</span>`;
+        const arrow = diff > 0.5 ? 'Y▼' : diff < -0.5 ? 'S▼' : '=';
+        diffHtml = `<span class="${cls}" title="Sagawa−Yamato">${arrow} ${fmtJpyDiff(diff)}</span>`;
+      } else if (ym.error && !sg.error) {
+        diffHtml = `<span class="diff-negative" title="Yamato 배송 불가">S▼ Y✗</span>`;
+      } else if (sg.error && !ym.error) {
+        diffHtml = `<span class="diff-positive" title="Sagawa 배송 불가">Y▼ S✗</span>`;
+      } else {
+        diffHtml = `<span class="diff-zero">둘 다 ✗</span>`;
       }
 
       tr.innerHTML = `
@@ -207,15 +231,17 @@ const JpUI = (() => {
         <td class="cell-name">${escHtml(p.name)}</td>
         ${ymCell}
         ${sgCell}
-        <td>${diffHtml}</td>
+        <td class="diff-cell">${diffHtml}</td>
         <td>${p.qty}</td>
       `;
       tbody.appendChild(tr);
     });
   }
 
-  function renderCarrierCell(line, carrier) {
+  function renderCarrierCell(line, carrier, opts) {
+    opts = opts || {};
     const themeCls = carrier === 'yamato' ? 'yamato-cell' : 'sagawa-cell';
+    const winnerCls = opts.winner ? ' winner-cell' : '';
 
     if (line.error) {
       return `
@@ -224,9 +250,10 @@ const JpUI = (() => {
     }
 
     const tags = [];
+    const sizeBadge = opts.winner ? ' <span class="winner-badge" title="이 화물은 이 배송사가 유리">★</span>' : '';
+    const divergentCls = opts.sizeDivergent ? ' size-divergent' : '';
 
     if (carrier === 'yamato') {
-      // Size source rationale
       const sumWins = line.sumTier > line.weightTier;
       const wgtWins = line.weightTier > line.sumTier;
       const sizeLabel = line.appliedSize + (line.isIntrapref ? ' 현내' : '');
@@ -241,18 +268,21 @@ const JpUI = (() => {
 
       const surcharge = line.coolSurcharge + line.sameDaySurcharge;
       const discount = line.discountTotal;
-      const surchargeHtml = surcharge > 0 ? `+¥${fmtJpy(surcharge)}` : '-';
-      const discountHtml = discount < 0 ? `<span class="discount-amount">¥${fmtJpy(discount)}</span>` : '-';
+      const adjParts = [];
+      if (surcharge > 0) adjParts.push(`+¥${fmtJpy(surcharge)}`);
+      if (discount < 0) adjParts.push(`<span class="discount-amount">¥${fmtJpy(discount)}</span>`);
+      const adjLine = adjParts.length ? `<span class="adj-line">${adjParts.join(' ')}</span>` : '';
 
       return `
-        <td class="${themeCls}"><strong>${sizeLabel}</strong></td>
+        <td class="${themeCls}${divergentCls}"><strong>${sizeLabel}</strong>${sizeBadge}</td>
         <td class="${themeCls}">¥${fmtJpy(line.baseRate)}</td>
-        <td class="${themeCls} jp-tag-cell">${tags.join(' ')}<br><span class="adj-line">${surchargeHtml} ${discountHtml}</span></td>
-        <td class="${themeCls}"><strong>¥${fmtJpy(line.perPkgTotal)}</strong></td>
+        <td class="${themeCls} jp-tag-cell">${tags.join(' ')}${adjLine ? '<br>' + adjLine : ''}</td>
+        <td class="${themeCls}${winnerCls}"><strong>¥${fmtJpy(line.perPkgTotal)}</strong></td>
       `;
     } else {
-      // Sagawa
-      const tier = line.serviceTier === 'large' ? '<span class="sg-tag sg-tag--large">L</span>' : '<span class="sg-tag sg-tag--std">S</span>';
+      const tier = line.serviceTier === 'large'
+        ? '<span class="sg-tag sg-tag--large" title="飛脚ラージサイズ">L</span>'
+        : '<span class="sg-tag sg-tag--std" title="飛脚宅配便">S</span>';
       const sizeLabel = `${line.appliedSize} ${tier}`;
       if (line.coolError) tags.push(`<span class="sg-tag sg-tag--cool-err">Cool불가</span>`);
       if (line.weightSurcharge > 0) tags.push(`<span class="sg-tag sg-tag--weight">중량할증 +¥${fmtJpy(line.weightSurcharge)}</span>`);
@@ -260,10 +290,10 @@ const JpUI = (() => {
       if (line.branchDiscount < 0) tags.push(`<span class="sg-tag sg-tag--discount">영업소반입 ¥${fmtJpy(line.branchDiscount)}</span>`);
 
       return `
-        <td class="${themeCls}">${sizeLabel}</td>
+        <td class="${themeCls}${divergentCls}">${sizeLabel}${sizeBadge}</td>
         <td class="${themeCls}">¥${fmtJpy(line.baseRate)}</td>
         <td class="${themeCls} jp-tag-cell">${tags.join(' ') || '-'}</td>
-        <td class="${themeCls}"><strong>¥${fmtJpy(line.perPkgTotal)}</strong></td>
+        <td class="${themeCls}${winnerCls}"><strong>¥${fmtJpy(line.perPkgTotal)}</strong></td>
       `;
     }
   }
@@ -318,6 +348,138 @@ const JpUI = (() => {
     const pctStr = Math.abs(pct) >= 0.5 ? ` (${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%)` : '';
     el.textContent = fmtJpyDiff(diff) + pctStr;
     el.className = 'diff-cell ' + (diff > 0.5 ? 'diff-positive' : diff < -0.5 ? 'diff-negative' : 'diff-zero');
+  }
+
+  // ─── Charts ───────────────────────────────────────────────────
+
+  function renderCharts(paired, ym, sg) {
+    if (typeof Chart === 'undefined') return;
+    renderItemCompareChart(paired);
+    renderCostBreakdownChart(ym, sg);
+  }
+
+  function renderItemCompareChart(paired) {
+    const ctx = document.getElementById('jp-chart-item-compare');
+    if (!ctx) return;
+    if (chartItemCompare) { chartItemCompare.destroy(); chartItemCompare = null; }
+
+    const active = paired.filter(p => p.yamato && p.sagawa);
+    if (!active.length) return;
+
+    const labels = active.map(p => p.name || '(unnamed)');
+    const ymTotals = active.map(p => p.yamato.error ? 0 : Math.round(p.yamato.lineTotal));
+    const sgTotals = active.map(p => p.sagawa.error ? 0 : Math.round(p.sagawa.lineTotal));
+
+    chartItemCompare = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Yamato TA-Q-BIN',
+            data: ymTotals,
+            backgroundColor: 'rgba(239, 68, 68, 0.7)',
+            borderColor: 'rgba(239, 68, 68, 1)',
+            borderWidth: 1,
+          },
+          {
+            label: 'Sagawa 飛脚宅配便',
+            data: sgTotals,
+            backgroundColor: 'rgba(59, 130, 246, 0.7)',
+            borderColor: 'rgba(59, 130, 246, 1)',
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { labels: { color: '#aaa', font: { size: 11 } } },
+          tooltip: {
+            callbacks: {
+              label: (c) => `${c.dataset.label}: ¥${c.parsed.y.toLocaleString('ja-JP')}`,
+            },
+          },
+        },
+        scales: {
+          x: { ticks: { color: '#888', font: { size: 10 } }, grid: { color: '#333' } },
+          y: {
+            ticks: { color: '#888', callback: (v) => '¥' + v.toLocaleString('ja-JP') },
+            grid: { color: '#333' },
+          },
+        },
+      },
+    });
+  }
+
+  function renderCostBreakdownChart(ym, sg) {
+    const ctx = document.getElementById('jp-chart-cost-breakdown');
+    if (!ctx) return;
+    if (chartCostBreakdown) { chartCostBreakdown.destroy(); chartCostBreakdown = null; }
+
+    if (ym.grandTotal === 0 && sg.grandTotal === 0) return;
+
+    const ymBase = Math.round(ym.baseSubtotal);
+    const sgBase = Math.round(sg.baseSubtotal);
+    const ymCool = Math.round(ym.coolSubtotal);
+    const sgCool = Math.round(sg.coolSubtotal);
+    const ymSameday = Math.round(ym.sameDaySubtotal);
+    const sgWeight = Math.round(sg.weightSubtotal);
+    const ymDiscount = Math.round(ym.discountSubtotal);
+    const sgDiscount = Math.round(sg.branchSubtotal);
+
+    chartCostBreakdown = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Yamato TA-Q-BIN', 'Sagawa 飛脚宅配便'],
+        datasets: [
+          {
+            label: '기본 운임',
+            data: [ymBase, sgBase],
+            backgroundColor: ['rgba(239, 68, 68, 0.6)', 'rgba(59, 130, 246, 0.6)'],
+          },
+          {
+            label: 'Cool 할증',
+            data: [ymCool, sgCool],
+            backgroundColor: ['rgba(124, 179, 247, 0.6)', 'rgba(124, 179, 247, 0.6)'],
+          },
+          {
+            label: '중량 할증 (Sagawa)',
+            data: [0, sgWeight],
+            backgroundColor: ['rgba(0,0,0,0)', 'rgba(251, 191, 36, 0.6)'],
+          },
+          {
+            label: '당일 배송 (Yamato)',
+            data: [ymSameday, 0],
+            backgroundColor: ['rgba(168, 85, 247, 0.6)', 'rgba(0,0,0,0)'],
+          },
+          {
+            label: '할인 (음수)',
+            data: [ymDiscount, sgDiscount],
+            backgroundColor: ['rgba(34, 197, 94, 0.6)', 'rgba(34, 197, 94, 0.6)'],
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { labels: { color: '#aaa', font: { size: 11 } } },
+          tooltip: {
+            callbacks: {
+              label: (c) => `${c.dataset.label}: ¥${c.parsed.y.toLocaleString('ja-JP')}`,
+            },
+          },
+        },
+        scales: {
+          x: { stacked: true, ticks: { color: '#888' }, grid: { color: '#333' } },
+          y: {
+            stacked: true,
+            ticks: { color: '#888', callback: (v) => '¥' + v.toLocaleString('ja-JP') },
+            grid: { color: '#333' },
+          },
+        },
+      },
+    });
   }
 
   // ─── Events ───────────────────────────────────────────────────
